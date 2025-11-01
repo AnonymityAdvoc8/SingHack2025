@@ -197,6 +197,31 @@ class MCPServer:
                     "name": "Analyze Trip Risk",
                     "description": "Claims-based risk analysis (Phase 5)",
                     "parameters": ["trip_details"]
+                },
+                # Phase 3 Tools: Intelligent Data Collection 🔥
+                {
+                    "id": "extract_trip_from_conversation",
+                    "name": "Extract Trip from Conversation",
+                    "description": "Extract trip details from natural language (Phase 3)",
+                    "parameters": ["message", "context"]
+                },
+                {
+                    "id": "get_destination_intelligence",
+                    "name": "Get Destination Intelligence",
+                    "description": "Real-time destination intel via Tavily (Phase 3)",
+                    "parameters": ["destination", "travel_date"]
+                },
+                {
+                    "id": "analyze_real_time_risks",
+                    "name": "Analyze Real-Time Risks",
+                    "description": "Real-time risk analysis via Tavily (Phase 3)",
+                    "parameters": ["destination", "activities", "travel_date"]
+                },
+                {
+                    "id": "get_medical_cost_intelligence",
+                    "name": "Get Medical Cost Intelligence",
+                    "description": "Real-time medical costs via Tavily (Phase 3)",
+                    "parameters": ["destination"]
                 }
             ]
         }
@@ -230,6 +255,19 @@ class MCPServer:
             
             elif tool_id == "analyze_trip_risk":
                 result = self.tools.analyze_trip_risk(**tool_params)
+            
+            # Phase 3 Tools: Intelligent Data Collection 🔥
+            elif tool_id == "extract_trip_from_conversation":
+                result = self.tools.extract_trip_from_conversation(**tool_params)
+            
+            elif tool_id == "get_destination_intelligence":
+                result = self.tools.get_destination_intelligence(**tool_params)
+            
+            elif tool_id == "analyze_real_time_risks":
+                result = self.tools.analyze_real_time_risks(**tool_params)
+            
+            elif tool_id == "get_medical_cost_intelligence":
+                result = self.tools.get_medical_cost_intelligence(**tool_params)
             
             else:
                 return {

@@ -73,6 +73,7 @@ class QuoteItemSchema(BaseModel):
     is_eligible: bool = True
     ineligibility_reasons: List[str] = []
     recommendation_score: Optional[float] = None  # 0-1 based on trip risk
+    api_metadata: Optional[Dict[str, Any]] = None  # Store API-specific data (quote_id, offer_id, etc.)
 
 
 class QuoteResponseSchema(BaseModel):

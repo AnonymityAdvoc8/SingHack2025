@@ -22,8 +22,25 @@ class Settings(BaseSettings):
     groq_api_key: str
     groq_model: str = "llama-3.3-70b-versatile"  # Updated: using latest available model
     
-    # Database
+    # Tavily Search API (Real-time Intelligence)
+    tavily_api_key: str
+    tavily_search_depth: str = "advanced"  # "basic" or "advanced"
+    
+    # Database (Policy & User Data)
     database_url: str = "sqlite:///./travelmate.db"
+    
+    # PostgreSQL Claims Database (MSIG Historical Data)
+    claims_db_host: str = "hackathon-db.ceqjfmi6jhdd.ap-southeast-1.rds.amazonaws.com"
+    claims_db_port: int = 5432
+    claims_db_name: str = "hackathon_db"
+    claims_db_user: str = "hackathon_user"
+    claims_db_password: str = "Hackathon2025!"
+    claims_db_schema: str = "hackathon"
+    
+    @property
+    def claims_database_url(self) -> str:
+        """PostgreSQL connection URL for claims data"""
+        return f"postgresql://{self.claims_db_user}:{self.claims_db_password}@{self.claims_db_host}:{self.claims_db_port}/{self.claims_db_name}"
     
     # DynamoDB (for payments)
     payments_db_endpoint: str = "http://localhost:8000"
@@ -37,8 +54,25 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str
     
     # MSIG API (optional)
-    msig_api_base_url: str = "https://api.msig.com.sg/v1"
+    msig_api_base_url: str = "https://dev.api.ancileo.com/v1"
     msig_api_key: str = ""
+    
+    # MSIG/Ancileo Travel Insurance API
+    ancileo_pricing_url: str = "https://dev.api.ancileo.com/v1/travel/front/pricing"
+    ancileo_purchase_url: str = "https://dev.api.ancileo.com/v1/travel/front/purchase"
+    ancileo_api_key: str = ""  # Optional: Add API key to enable real MSIG pricing
+    
+    # Risk Configuration
+    high_risk_destinations: str = "USA,Canada,Japan,Switzerland"  # Comma-separated list
+    high_risk_multiplier: float = 1.3  # Premium multiplier for high-risk destinations
+    high_risk_activity_multiplier: float = 1.4  # Premium multiplier for high-risk activities
+    
+    @property
+    def high_risk_destinations_list(self) -> list[str]:
+        """Parse comma-separated destinations into a list"""
+        if not self.high_risk_destinations:
+            return []
+        return [country.strip() for country in self.high_risk_destinations.split(",") if country.strip()]
     
     # Security
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8085"]

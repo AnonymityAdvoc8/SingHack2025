@@ -9,6 +9,8 @@ from app.services.comparison_service import PolicyComparisonService
 from app.services.eligibility_service import EligibilityService
 from app.services.question_service import QuestionAnsweringService
 from app.services.quote_service import QuoteService
+from app.services.tavily_service import TavilyIntelligenceService
+from app.services.conversational_service import ConversationalExtractionService
 from app.schemas.trip import TripDetailsSchema, QuoteRequestSchema
 from app.utils.logger import get_logger
 
@@ -24,6 +26,8 @@ class MCPTools:
         self.eligibility_service = EligibilityService(db)
         self.question_service = QuestionAnsweringService(db)
         self.quote_service = QuoteService(db)
+        self.tavily_service = TavilyIntelligenceService()  # NEW: Phase 3
+        self.conversational_service = ConversationalExtractionService()  # NEW: Phase 3
     
     # Tool 1: Compare Policies
     def compare_policies(
@@ -256,4 +260,104 @@ class MCPTools:
             "message": "Risk analysis will be implemented in Phase 5 with historical claims data",
             "next_phase": "Phase 5: Claims Intelligence"
         }
+    
+    # Phase 3 Tools: Intelligent Data Collection 🔥 NEW!
+    
+    def extract_trip_from_conversation(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Extract trip details from natural conversation (Phase 3)
+        
+        Args:
+            message: User's conversational message
+            context: Existing conversation context
+            
+        Returns:
+            Extracted details + follow-up question if needed
+        """
+        logger.info("tool_conversational_extraction", message_length=len(message))
+        
+        extraction_result = self.conversational_service.extract_from_message(
+            message,
+            context
+        )
+        
+        # Generate follow-up question if not complete
+        if not extraction_result["is_complete"]:
+            extraction_result["follow_up_question"] = self.conversational_service.generate_follow_up_question(
+                extraction_result["missing"],
+                extraction_result["extracted"]
+            )
+        else:
+            extraction_result["follow_up_question"] = "Great! I have all the details I need. Let me generate your quote."
+        
+        return extraction_result
+    
+    def get_destination_intelligence(
+        self,
+        destination: str,
+        travel_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Get real-time destination intelligence using Tavily (Phase 3)
+        
+        Args:
+            destination: Travel destination
+            travel_date: Optional travel date for temporal context
+            
+        Returns:
+            Real-time intelligence with citations
+        """
+        logger.info("tool_destination_intelligence", destination=destination)
+        
+        return self.tavily_service.get_destination_intelligence(
+            destination,
+            travel_date
+        )
+    
+    def analyze_real_time_risks(
+        self,
+        destination: str,
+        activities: List[str],
+        travel_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Analyze real-time travel risks using Tavily (Phase 3)
+        
+        Args:
+            destination: Travel destination
+            activities: Planned activities
+            travel_date: Optional travel date
+            
+        Returns:
+            Risk analysis with current conditions and citations
+        """
+        logger.info("tool_realtime_risk_analysis", destination=destination, activities=activities)
+        
+        return self.tavily_service.analyze_real_time_risks(
+            destination,
+            activities,
+            travel_date
+        )
+    
+    def get_medical_cost_intelligence(
+        self,
+        destination: str
+    ) -> Dict[str, Any]:
+        """
+        Get real-time medical cost intelligence using Tavily (Phase 3)
+        
+        Args:
+            destination: Travel destination
+            
+        Returns:
+            Medical cost information with recommendations
+        """
+        logger.info("tool_medical_cost_intelligence", destination=destination)
+        
+        return self.tavily_service.get_medical_cost_intelligence(destination)
+
 

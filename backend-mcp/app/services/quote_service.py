@@ -14,10 +14,13 @@ from app.schemas.trip import (
     TripDetailsSchema
 )
 from app.services.eligibility_service import EligibilityService
+from app.services.ancileo_client import AncileoAPIClient
 from app.mcp.resources import MCPResources
 from app.utils.logger import get_logger
+from app.config import get_settings
 
 logger = get_logger(__name__)
+settings = get_settings()
 
 
 class QuoteService:
@@ -27,6 +30,15 @@ class QuoteService:
         self.db = db
         self.resources = MCPResources(db)
         self.eligibility_service = EligibilityService(db)
+        self.ancileo_client = AncileoAPIClient()
+        self.use_real_api = bool(settings.ancileo_api_key)  # Use real API if key exists
+        
+        # Debug logging
+        logger.info(
+            "quote_service_initialized",
+            use_real_api=self.use_real_api,
+            api_key_length=len(settings.ancileo_api_key) if settings.ancileo_api_key else 0
+        )
     
     def generate_quote(
         self,
@@ -34,6 +46,7 @@ class QuoteService:
     ) -> QuoteResponseSchema:
         """
         Generate real insurance quotes for eligible policies
+        Uses Ancileo/MSIG API if configured, falls back to local pricing
         
         Args:
             quote_request: Quote request with trip details
@@ -43,8 +56,121 @@ class QuoteService:
         """
         logger.info("generate_quote", 
                    destination=quote_request.trip_details.destination_country,
-                   travelers=len(quote_request.trip_details.travelers))
+                   travelers=len(quote_request.trip_details.travelers),
+                   use_real_api=self.use_real_api)
         
+        trip_details = quote_request.trip_details
+        
+        # Try to get real pricing from Ancileo API first
+        logger.info(
+            "quote_generation_strategy",
+            use_real_api=self.use_real_api,
+            api_key_configured=bool(settings.ancileo_api_key),
+            api_key_length=len(settings.ancileo_api_key) if settings.ancileo_api_key else 0
+        )
+        
+        if self.use_real_api:
+            try:
+                logger.info("attempting_real_api_pricing")
+                return self._generate_quote_from_api(quote_request)
+            except Exception as e:
+                logger.error("ancileo_api_failed_fallback_to_local", error=str(e))
+                # Fall through to local pricing
+        else:
+            logger.info("using_local_pricing_fallback", reason="use_real_api_is_false")
+        
+        # Fall back to local pricing logic
+        return self._generate_quote_local(quote_request)
+    
+    def _generate_quote_from_api(
+        self,
+        quote_request: QuoteRequestSchema
+    ) -> QuoteResponseSchema:
+        """Generate quote using real Ancileo/MSIG API"""
+        trip_details = quote_request.trip_details
+        
+        # Map our country codes to ISO codes for API
+        country_code_map = {
+            "Japan": "JP",
+            "China": "CN",
+            "Thailand": "TH",
+            "USA": "US",
+            "United States": "US",
+            "Morocco": "MA",
+            "Australia": "AU",
+            "Singapore": "SG"
+        }
+        
+        arrival_country = country_code_map.get(
+            trip_details.destination_country,
+            "CN"  # Default
+        )
+        
+        # Determine trip type
+        trip_type = "RT"  # Round trip (has return date)
+        if not trip_details.return_date:
+            trip_type = "ST"  # Single trip
+        
+        # Call Ancileo API
+        api_response = self.ancileo_client.get_pricing_sync(
+            departure_date=trip_details.departure_date.strftime("%Y-%m-%d"),
+            return_date=trip_details.return_date.strftime("%Y-%m-%d") if trip_details.return_date else trip_details.departure_date.strftime("%Y-%m-%d"),
+            departure_country="SG",
+            arrival_country=arrival_country,
+            adults_count=sum(1 for t in trip_details.travelers if t.age >= 18),
+            children_count=sum(1 for t in trip_details.travelers if t.age < 18),
+            trip_type=trip_type
+        )
+        
+        # Parse response
+        parsed = self.ancileo_client.parse_pricing_response(api_response)
+        
+        # Convert to our quote format
+        quotes = []
+        for offer in parsed["offers"]:
+            product_info = offer.get("product_info", {})
+            
+            # Create quote item (NOTE: API returns ONE offer, not per-policy)
+            quote_item = QuoteItemSchema(
+                policy_id="ancileo_" + offer.get("product_code", "unknown"),
+                policy_name=product_info.get("title", "MSIG Travel Insurance"),
+                premium=float(offer.get("unit_price", 0)),
+                currency="SGD",
+                coverage_summary={
+                    "benefits": product_info.get("benefits", ""),
+                    "passengers": len(offer.get("passengers", [])),
+                    "product_code": offer.get("product_code")
+                },
+                is_eligible=True,
+                ineligibility_reasons=[],
+                recommendation_score=0.8,
+                # Store API-specific data for purchase
+                api_metadata={
+                    "quote_id": parsed.get("quote_id"),
+                    "offer_id": offer.get("offer_id"),
+                    "product_code": offer.get("product_code")
+                }
+            )
+            quotes.append(quote_item)
+        
+        # Generate quote ID
+        quote_id = parsed.get("quote_id") or f"Q-{uuid.uuid4().hex[:12].upper()}"
+        
+        return QuoteResponseSchema(
+            quote_id=quote_id,
+            trip_details=trip_details,
+            quotes=quotes,
+            recommended_policy_id=quotes[0].policy_id if quotes else None,
+            recommendation_rationale=f"Real-time pricing from MSIG for {trip_details.destination_country}",
+            created_at=datetime.utcnow(),
+            expires_at=datetime.utcnow() + timedelta(days=7)
+        )
+    
+    def _generate_quote_local(
+        self,
+        quote_request: QuoteRequestSchema
+    ) -> QuoteResponseSchema:
+        """Generate quote using local pricing logic (fallback)"""
         trip_details = quote_request.trip_details
         
         # Get policies to quote
@@ -123,14 +249,13 @@ class QuoteService:
             elif traveler.age < 18:
                 total_premium *= 0.7  # 30% discount for children
         
-        # Destination risk factor
-        high_risk_destinations = ["USA", "Canada", "Japan"]
-        if trip_details.destination_country in high_risk_destinations:
-            total_premium *= 1.3
+        # Destination risk factor (from config)
+        if trip_details.destination_country in settings.high_risk_destinations_list:
+            total_premium *= settings.high_risk_multiplier
         
-        # Activity risk factor
+        # Activity risk factor (from config)
         if trip_details.has_high_risk_activities:
-            total_premium *= 1.4
+            total_premium *= settings.high_risk_activity_multiplier
         
         # Pre-existing conditions factor
         if any(t.has_pre_existing_conditions for t in trip_details.travelers):
@@ -229,8 +354,7 @@ class QuoteService:
                 score -= 0.3
         
         # Reward high medical coverage for risky destinations
-        high_risk_destinations = ["USA", "Canada"]
-        if trip_details.destination_country in high_risk_destinations:
+        if trip_details.destination_country in settings.high_risk_destinations_list:
             medical_coverage = sum(
                 b.coverage_limit for b in policy.benefits
                 if b.coverage_limit and "medical" in b.benefit_name.lower()

@@ -1,13 +1,19 @@
-"""Services package initialization"""
+"""Services package initialization
 
-from app.services.comparison_service import PolicyComparisonService
-from app.services.eligibility_service import EligibilityService
-from app.services.question_service import QuestionAnsweringService
-from app.services.quote_service import QuoteService
+Note: Services are NOT auto-imported to avoid circular dependencies.
+Import services directly from their modules:
+    from app.services.comparison_service import PolicyComparisonService
+"""
+
+# No automatic imports to prevent circular dependency issues
+# Each service should be imported explicitly where needed
 
 __all__ = [
     "PolicyComparisonService",
     "EligibilityService",
     "QuestionAnsweringService",
-    "QuoteService"
+    "QuoteService",
+    "TavilyIntelligenceService",
+    "ConversationalExtractionService",
+    "ConversationOrchestrator"
 ]

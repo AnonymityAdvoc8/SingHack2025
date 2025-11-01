@@ -5,6 +5,7 @@ REST API wrapping the MCP Server
 
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
@@ -14,6 +15,14 @@ from app.database import get_db, init_db
 from app.mcp.server import MCPServer
 from app.schemas.trip import TripDetailsSchema, QuoteRequestSchema
 from app.utils.logger import get_logger
+from app.api.openai_compat import (
+    ChatCompletionRequest,
+    ChatCompletionResponse,
+    convert_to_ask_format,
+    convert_from_ask_format,
+    stream_response_chunks,
+    create_error_response
+)
 
 settings = get_settings()
 logger = get_logger(__name__)
@@ -51,6 +60,8 @@ class QuestionRequest(BaseModel):
     question: str
     policy_id: Optional[str] = None
     include_citations: bool = True
+    session_id: Optional[str] = None  # NEW: For conversation continuity
+    context: Optional[Dict[str, Any]] = None  # NEW: For conversation state
 
 
 class EligibilityRequest(BaseModel):
@@ -160,18 +171,43 @@ async def ask_question(
     db: Session = Depends(get_db)
 ):
     """
-    Answer policy questions with citations
+    Intelligent conversational endpoint with automatic Tavily integration
     
-    Convenience endpoint that wraps MCP answer_policy_question tool
+    **NEW in Phase 3:**
+    - Automatically extracts trip details from conversation
+    - Triggers Tavily for real-time destination intelligence
+    - Provides personalized policy recommendations with real-time insights
+    - Handles multi-turn conversations with context
+    
+    **Usage:**
+    - Simple questions: "What does medical evacuation cover?"
+    - Recommendations: "I'm 31 travelling to Japan for hiking, which policy?"
+    - Follow-ups: Maintains context across multiple messages
     """
     logger.info("api_ask", question_length=len(request.question))
     
-    mcp_server = MCPServer(db)
-    result = mcp_server.tools.answer_policy_question(
-        question=request.question,
-        policy_id=request.policy_id,
-        include_citations=request.include_citations
+    # Import here to avoid circular dependency
+    from app.services.orchestration_service import ConversationOrchestrator
+    
+    # Use orchestrator for intelligent routing
+    orchestrator = ConversationOrchestrator(db)
+    result = orchestrator.handle_message(
+        message=request.question,
+        session_id=request.session_id,
+        context=request.context
     )
+    
+    # Add metadata for API response
+    result["api_version"] = "2.0"
+    result["features_used"] = []
+    
+    # Track which features were used
+    if result.get("real_time_intelligence"):
+        result["features_used"].append("tavily_intelligence")
+    if result.get("trip_details"):
+        result["features_used"].append("conversational_extraction")
+    if result.get("policy_recommendations"):
+        result["features_used"].append("policy_matching")
     
     return result
 
@@ -298,6 +334,137 @@ async def get_policy(policy_id: str, db: Session = Depends(get_db)):
         "general_conditions": policy.general_conditions.dict() if policy.general_conditions else None,
         "benefits": [b.dict() for b in policy.benefits],
         "operational_details": policy.operational_details.dict() if policy.operational_details else None
+    }
+
+
+# =============================================================================
+# OpenAI-Compatible Chat Completions API
+# =============================================================================
+
+@app.post("/v1/chat/completions")
+async def chat_completions(
+    request: ChatCompletionRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    OpenAI-compatible Chat Completions endpoint
+    
+    Supports both streaming and non-streaming responses.
+    Compatible with OpenAI SDKs, Claude Desktop, and other tools.
+    
+    **Example (Non-streaming)**:
+    ```json
+    {
+      "model": "travelmate-ai",
+      "messages": [
+        {"role": "user", "content": "I need insurance for Japan trip"}
+      ],
+      "stream": false
+    }
+    ```
+    
+    **Example (Streaming)**:
+    ```json
+    {
+      "model": "travelmate-ai",
+      "messages": [
+        {"role": "user", "content": "I need insurance for Japan trip"}
+      ],
+      "stream": true
+    }
+    ```
+    """
+    logger.info(
+        "openai_chat_completions",
+        model=request.model,
+        messages=len(request.messages),
+        stream=request.stream
+    )
+    
+    try:
+        # Convert OpenAI format to our internal format
+        ask_request = convert_to_ask_format(request)
+        
+        # Import here to avoid circular dependency
+        from app.services.orchestration_service import ConversationOrchestrator
+        
+        # Use orchestrator for intelligent routing
+        orchestrator = ConversationOrchestrator(db)
+        ask_response = orchestrator.handle_message(
+            message=ask_request["question"],
+            session_id=ask_request.get("session_id"),
+            context=ask_request.get("context")
+        )
+        
+        # Generate unique request ID
+        import uuid
+        request_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
+        
+        # Handle streaming vs non-streaming
+        if request.stream:
+            logger.info("openai_streaming_response", request_id=request_id)
+            
+            try:
+                # Extract answer for streaming
+                answer = ask_response.get("answer", "I couldn't generate a response.")
+                
+                logger.info("openai_streaming_answer_extracted", length=len(answer))
+                
+                # Return SSE stream
+                return StreamingResponse(
+                    stream_response_chunks(answer, request_id, request.model),
+                    media_type="text/event-stream",
+                    headers={
+                        "Cache-Control": "no-cache",
+                        "Connection": "keep-alive",
+                        "X-Accel-Buffering": "no"  # Disable nginx buffering
+                    }
+                )
+            except Exception as stream_err:
+                logger.error("openai_streaming_error", error=str(stream_err), traceback=True)
+                raise HTTPException(
+                    status_code=500,
+                    detail={"error": f"Streaming failed: {str(stream_err)}"}
+                )
+        else:
+            logger.info("openai_complete_response", request_id=request_id)
+            
+            # Convert to OpenAI format
+            response = convert_from_ask_format(ask_response, request_id, request.model)
+            
+            return response
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("openai_chat_error", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=create_error_response(str(e), 500)
+        )
+
+
+@app.get("/v1/models")
+async def list_models():
+    """
+    OpenAI-compatible models list endpoint
+    Returns available TravelMate AI models
+    """
+    import time
+    
+    return {
+        "object": "list",
+        "data": [
+            {
+                "id": "travelmate-ai",
+                "object": "model",
+                "created": int(time.time()),
+                "owned_by": "travelmate",
+                "permission": [],
+                "root": "travelmate-ai",
+                "parent": None
+            }
+        ]
     }
 
 
