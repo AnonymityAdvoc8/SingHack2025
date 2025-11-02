@@ -88,6 +88,21 @@ def convert_to_ask_format(request: ChatCompletionRequest) -> Dict[str, Any]:
             for msg in request.messages[:-1]  # All except last message
         ]
     
+    # CRITICAL: Load session data to get gmail_scan_results and other session info
+    if request.session_id:
+        from app.services.session_store import get_session_store
+        session_store = get_session_store()
+        saved_session = session_store.load_session(request.session_id)
+        
+        if saved_session:
+            # Add Gmail scan results to context if they exist
+            if saved_session.get("gmail_scan_results"):
+                context["gmail_scan_results"] = saved_session["gmail_scan_results"]
+            
+            # Add extracted trip details if not already in context
+            if "extracted_trip_details" not in context and saved_session.get("extracted_trip_details"):
+                context["extracted_trip_details"] = saved_session["extracted_trip_details"]
+    
     return {
         "question": question,
         "session_id": request.session_id,
@@ -113,6 +128,17 @@ def convert_from_ask_format(
     """
     # Extract the answer
     answer = ask_response.get("answer", "I apologize, but I couldn't generate a response.")
+    
+    # Embed metadata if present (for UI features like suggested actions)
+    metadata = {}
+    if ask_response.get("suggested_actions"):
+        metadata["suggested_actions"] = ask_response["suggested_actions"]
+    if ask_response.get("agent_activities"):
+        metadata["agent_activities"] = ask_response["agent_activities"]
+    
+    # Append metadata to answer if present (UI will parse it)
+    if metadata:
+        answer = f"{answer}\n\n[METADATA]{json.dumps(metadata)}[/METADATA]"
     
     # Estimate token counts (rough approximation)
     prompt_tokens = sum(len(msg.get("content", "").split()) for msg in ask_response.get("context", {}).get("conversation_history", []))

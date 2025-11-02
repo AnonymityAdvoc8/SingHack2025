@@ -91,6 +91,111 @@ async def shutdown_event():
 
 
 # Health check endpoint
+@app.get("/oauth/callback")
+async def oauth_callback(code: str, state: str):
+    """
+    Handle OAuth callback from Google
+    User is redirected here after authorizing Gmail access
+    """
+    logger.info("oauth_callback_received", state=state)
+    
+    try:
+        from app.services.gmail_oauth import get_gmail_oauth_service
+        oauth_service = get_gmail_oauth_service()  # Use singleton
+        
+        credentials = oauth_service.handle_oauth_callback(code, state)
+        
+        if credentials:
+            # Store credentials in session for later use
+            from app.services.session_store import get_session_store
+            session_store = get_session_store()
+            
+            # Load existing session
+            session_data = session_store.load_session(state) or {}
+            
+            # Store credentials token (not the whole object, just what we need)
+            session_data["gmail_authorized"] = True
+            session_data["gmail_token"] = credentials.token
+            session_data["gmail_refresh_token"] = credentials.refresh_token
+            
+            # Save back
+            session_store.save_session(
+                session_id=state,
+                conversation_history=session_data.get("conversation_history", []),
+                extracted_trip_details=session_data.get("extracted_trip_details", {}),
+                trip_context=session_data.get("trip_context", {}),
+                gmail_authorized=True
+            )
+            
+            logger.info("gmail_credentials_stored_in_session", session=state)
+            
+            # Auto-trigger Gmail scan now that we're authorized
+            logger.info("gmail_auth_success_auto_scanning", session=state)
+            
+            # Get Gmail agent and scan
+            from app.services.gmail_agent import GmailAgent
+            from app.database import get_db
+            
+            gmail_agent = GmailAgent()
+            bookings = await gmail_agent.search_for_bookings(credentials=credentials, use_mock=False)
+            
+            # Store results in session for retrieval
+            session_data["gmail_scan_results"] = [
+                {
+                    "email_id": b.email_id,
+                    "subject": b.subject,
+                    "booking_type": b.booking_type,
+                    "extracted_data": b.extracted_data
+                }
+                for b in bookings
+            ]
+            
+            session_store.save_session(
+                session_id=state,
+                conversation_history=session_data.get("conversation_history", []),
+                extracted_trip_details=session_data.get("extracted_trip_details", {}),
+                trip_context=session_data.get("trip_context", {}),
+                gmail_authorized=True,
+                gmail_scan_results=session_data["gmail_scan_results"]  # CRITICAL: Save scan results
+            )
+            
+            # Show results immediately
+            formatted_bookings = gmail_agent.format_bookings_for_display(bookings)
+            
+            html_response = f"""
+            <html>
+            <head><title>Gmail Authorized</title></head>
+            <body style="font-family: system-ui; padding: 40px; background: #1a1a1a; color: white;">
+                <h2>✅ Gmail Authorized!</h2>
+                <p>I found {len(bookings)} booking(s) in your email.</p>
+                <div style="background: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <pre style="white-space: pre-wrap;">{formatted_bookings}</pre>
+                </div>
+                <p><strong>Close this window and return to the chat - your bookings are ready!</strong></p>
+                <script>
+                    // Auto-close after 3 seconds
+                    setTimeout(() => window.close(), 3000);
+                </script>
+            </body>
+            </html>
+            """
+            
+            from fastapi.responses import HTMLResponse
+            return HTMLResponse(content=html_response)
+        else:
+            return {
+                "success": False,
+                "error": "Failed to authorize Gmail"
+            }
+    
+    except Exception as e:
+        logger.error("oauth_callback_error", error=str(e))
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
@@ -191,7 +296,7 @@ async def ask_question(
     
     # Use orchestrator for intelligent routing
     orchestrator = ConversationOrchestrator(db)
-    result = orchestrator.handle_message(
+    result = await orchestrator.handle_message(
         message=request.question,
         session_id=request.session_id,
         context=request.context
@@ -390,7 +495,7 @@ async def chat_completions(
         
         # Use orchestrator for intelligent routing
         orchestrator = ConversationOrchestrator(db)
-        ask_response = orchestrator.handle_message(
+        ask_response = await orchestrator.handle_message(
             message=ask_request["question"],
             session_id=ask_request.get("session_id"),
             context=ask_request.get("context")

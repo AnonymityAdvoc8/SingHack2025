@@ -91,19 +91,49 @@ class QuoteService:
         
         # Map our country codes to ISO codes for API
         country_code_map = {
+            # Asia
             "Japan": "JP",
             "China": "CN",
             "Thailand": "TH",
+            "Singapore": "SG",
+            "Indonesia": "ID",
+            "Malaysia": "MY",
+            "Vietnam": "VN",
+            "Philippines": "PH",
+            "South Korea": "KR",
+            "India": "IN",
+            
+            # Europe
+            "France": "FR",
+            "United Kingdom": "GB",
+            "UK": "GB",
+            "Germany": "DE",
+            "Italy": "IT",
+            "Spain": "ES",
+            "Switzerland": "CH",
+            "Netherlands": "NL",
+            "Belgium": "BE",
+            "Austria": "AT",
+            
+            # Americas
             "USA": "US",
             "United States": "US",
-            "Morocco": "MA",
+            "Canada": "CA",
+            "Mexico": "MX",
+            
+            # Oceania
             "Australia": "AU",
-            "Singapore": "SG"
+            "New Zealand": "NZ",
+            
+            # Africa
+            "Morocco": "MA",
+            "Egypt": "EG",
+            "South Africa": "ZA"
         }
         
         arrival_country = country_code_map.get(
             trip_details.destination_country,
-            "CN"  # Default
+            "JP"  # Default to Japan (more common than China)
         )
         
         # Determine trip type

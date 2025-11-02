@@ -62,6 +62,10 @@ class Settings(BaseSettings):
     ancileo_purchase_url: str = "https://dev.api.ancileo.com/v1/travel/front/purchase"
     ancileo_api_key: str = ""  # Optional: Add API key to enable real MSIG pricing
     
+    # Google OAuth (Gmail Integration)
+    google_client_id: str = ""  # Optional: Google OAuth client ID for Gmail scanning
+    google_client_secret: str = ""  # Optional: Google OAuth client secret
+    
     # Risk Configuration
     high_risk_destinations: str = "USA,Canada,Japan,Switzerland"  # Comma-separated list
     high_risk_multiplier: float = 1.3  # Premium multiplier for high-risk destinations

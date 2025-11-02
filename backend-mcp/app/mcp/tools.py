@@ -11,6 +11,8 @@ from app.services.question_service import QuestionAnsweringService
 from app.services.quote_service import QuoteService
 from app.services.tavily_service import TavilyIntelligenceService
 from app.services.conversational_service import ConversationalExtractionService
+from app.services.gmail_agent import GmailAgent
+from app.services.flight_api_agent import FlightAPIAgent
 from app.schemas.trip import TripDetailsSchema, QuoteRequestSchema
 from app.utils.logger import get_logger
 
@@ -28,6 +30,8 @@ class MCPTools:
         self.quote_service = QuoteService(db)
         self.tavily_service = TavilyIntelligenceService()  # NEW: Phase 3
         self.conversational_service = ConversationalExtractionService()  # NEW: Phase 3
+        self.gmail_agent = GmailAgent()  # NEW: Agentic AI
+        self.flight_api_agent = FlightAPIAgent()  # NEW: Agentic AI
     
     # Tool 1: Compare Policies
     def compare_policies(
@@ -359,5 +363,129 @@ class MCPTools:
         logger.info("tool_medical_cost_intelligence", destination=destination)
         
         return self.tavily_service.get_medical_cost_intelligence(destination)
+    
+    # NEW AGENTIC AI TOOLS
+    
+    async def scan_gmail_for_trips(self, auth_code: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Scan user's Gmail for booking confirmations (Agentic AI)
+        
+        Args:
+            auth_code: OAuth authorization code (if first time)
+            
+        Returns:
+            Found bookings with extracted trip details
+        """
+        logger.info("tool_scan_gmail")
+        
+        try:
+            # If auth_code provided, authorize first
+            if auth_code:
+                auth_result = await self.gmail_agent.authorize_user(auth_code)
+                if not auth_result.get("authorized"):
+                    return {"error": "Gmail authorization failed", "auth_result": auth_result}
+            
+            # Search for bookings
+            bookings = await self.gmail_agent.search_for_bookings()
+            
+            if not bookings:
+                return {
+                    "found_bookings": False,
+                    "count": 0,
+                    "message": "No booking confirmations found in your recent emails."
+                }
+            
+            # Format for display
+            formatted = self.gmail_agent.format_bookings_for_display(bookings)
+            
+            return {
+                "found_bookings": True,
+                "count": len(bookings),
+                "bookings": [
+                    {
+                        "email_id": b.email_id,
+                        "subject": b.subject,
+                        "booking_type": b.booking_type,
+                        "confidence": b.confidence,
+                        "extracted_data": b.extracted_data
+                    }
+                    for b in bookings
+                ],
+                "display_message": formatted
+            }
+        
+        except Exception as e:
+            logger.error("gmail_scan_failed", error=str(e))
+            return {"error": f"Failed to scan Gmail: {str(e)}"}
+    
+    async def lookup_flight_booking(self, booking_ref: str) -> Dict[str, Any]:
+        """
+        Look up flight booking by reference number (Agentic AI)
+        
+        Args:
+            booking_ref: Flight booking reference/PNR
+            
+        Returns:
+            Flight booking details with extracted trip information
+        """
+        logger.info("tool_lookup_flight", booking_ref=booking_ref)
+        
+        try:
+            # Look up booking
+            booking = await self.flight_api_agent.lookup_booking(booking_ref)
+            
+            if not booking:
+                return {
+                    "found": False,
+                    "error": "Booking not found. Please check your reference number and try again."
+                }
+            
+            # Extract trip details for insurance
+            trip_details = self.flight_api_agent.extract_trip_details(booking)
+            
+            # Format for display
+            formatted = self.flight_api_agent.format_booking_for_display(booking)
+            
+            return {
+                "found": True,
+                "booking_ref": booking_ref,
+                "airline": booking.get("airline"),
+                "booking_details": booking,
+                "trip_details": trip_details,
+                "display_message": formatted
+            }
+        
+        except Exception as e:
+            logger.error("flight_lookup_failed", error=str(e), booking_ref=booking_ref)
+            return {"error": f"Failed to lookup flight: {str(e)}"}
+    
+    async def select_gmail_booking(self, email_id: str, bookings: List[Any]) -> Dict[str, Any]:
+        """
+        User selected a booking from Gmail scan results
+        
+        Args:
+            email_id: ID of selected email
+            bookings: List of found bookings
+            
+        Returns:
+            Extracted trip details from selected booking
+        """
+        logger.info("tool_select_gmail_booking", email_id=email_id)
+        
+        # Find the selected booking
+        selected = next((b for b in bookings if b.email_id == email_id), None)
+        
+        if not selected:
+            return {"error": "Selected booking not found"}
+        
+        # Extract trip details
+        trip_details = self.gmail_agent.extract_trip_details_from_booking(selected)
+        
+        return {
+            "success": True,
+            "trip_details": trip_details,
+            "booking_type": selected.booking_type,
+            "message": f"Perfect! I've extracted the details from your {selected.booking_type} booking. Let me find the best coverage! ✨"
+        }
 
 
