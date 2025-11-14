@@ -1,0 +1,1785 @@
+{
+  "product_key": "Product A",
+  "pdf_file": "Scootsurance.pdf",
+  "text_length": 33738,
+  "layer_1_general_conditions": [
+    {
+      "condition": "trip_start_singapore",
+      "condition_exist": true,
+      "original_text": "Your trip must begin in Singapore.",
+      "parameters": {
+        "departure_location": "Singapore"
+      }
+    },
+    {
+      "condition": "age_eligibility",
+      "condition_exist": true,
+      "original_text": "\u2022 12 to 69 years old \u2022 70 to 74 years old \u2022 Below 12 years old",
+      "parameters": {
+        "min_age": 12,
+        "max_age": 74,
+        "unit": "years",
+        "child_age": 12
+      }
+    },
+    {
+      "condition": "good_health",
+      "condition_exist": true,
+      "original_text": "The insured persons must be in good health.",
+      "parameters": {}
+    },
+    {
+      "condition": "child_accompaniment_requirement",
+      "condition_exist": true,
+      "original_text": "Any insured child under the age of 12 years must be accompanied by a parent or adult guardian during the trip.",
+      "parameters": {
+        "child_age": 12,
+        "accompaniment": "parent or adult guardian"
+      }
+    },
+    {
+      "condition": "pre_existing_conditions",
+      "condition_exist": true,
+      "original_text": "excluding any Pre-Existing Medical Condition",
+      "parameters": {}
+    },
+    {
+      "condition": "travel_advisory_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "awareness_of_circumstances",
+      "condition_exist": true,
+      "original_text": "At the time of arranging the trip or taking out this insurance, neither You nor any other insured person is aware of any circumstances which are likely to lead to a claim under the Policy.",
+      "parameters": {}
+    },
+    {
+      "condition": "pre_trip_purchased",
+      "condition_exist": true,
+      "original_text": "At the time You send us Your application for this insurance, none of the intended insured persons have already left Singapore on any trip meant to be covered by this insurance.",
+      "parameters": {}
+    },
+    {
+      "condition": "declaration_of_previous_insurance",
+      "condition_exist": true,
+      "original_text": "If an insured person has ever been refused cover or had special terms placed on them by any insurer for travel insurance, they must declare this at the point of application and We must accept them, or there will be no cover for them.",
+      "parameters": {}
+    },
+    {
+      "condition": "medical_advice_and_treatment_restriction",
+      "condition_exist": true,
+      "original_text": "The insured persons are not travelling against the advice of a doctor or for the purpose of getting medical treatment.",
+      "parameters": {}
+    },
+    {
+      "condition": "purchase_before_departure",
+      "condition_exist": true,
+      "original_text": "At the time You send us Your application for this insurance, none of the intended insured persons have already left Singapore on any trip meant to be covered by this insurance.",
+      "parameters": {}
+    },
+    {
+      "condition": "prudence_and_precaution_requirement",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "medical_fitness_and_cancellation_awareness",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "pre_ex_critical_care_eligibility",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "vaccination_and_medication_requirement",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "selfharm_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "illegal_or_wilful_act_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "drug_and_alcohol_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "malicious_unlawful_acts",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "against_doctor_advice",
+      "condition_exist": true,
+      "original_text": "The insured persons are not travelling against the advice of a doctor or for the purpose of getting medical treatment.",
+      "parameters": {}
+    },
+    {
+      "condition": "pregnancy_related_conditions",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "medical_treatment_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "HIV_AIDS_conditions",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "mental_health_exclusions",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "exploratory_tests_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "cosmetic_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "dental_treatment_exclusion",
+      "condition_exist": true,
+      "original_text": "Dental Expenses Reasonable and necessary charges for dental treatment due solely to an Accident, carried out by a Dentist practicing within the scope of his/her license, and not exceeding the usual level of charges for similar treatment in the locality where the expense is incurred and does not include charges that would not have been made if no insurance existed.",
+      "parameters": {}
+    },
+    {
+      "condition": "non_hospital_treatment",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "non_doctor_recommended_treatment",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "aerial_activity_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "professional_sports_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "dangerous_activities_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "mountaineering_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "high_altitude_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "underwater_activities_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "water_sports_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "racing_activities",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "excluded_areas",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "excluded_travel_destinations",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "consequential_loss_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "excluded_occupations",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "work_at_heights_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "hazardous_work_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "military_occupational_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "covid_and_pandemic_exclusions",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "war_and_terrorism_exclusion",
+      "condition_exist": true,
+      "original_text": "Act of Terrorism Use of force or violence, including the use of nuclear, chemical and biological substances, causing damage, Injury or disruption or commission of an act dangerous to human life or property, against any individual, property or government with the objective of pursuing economic, ethnic, nationalistic, political, racial or religious interests, whether such interests are declared or not.",
+      "parameters": {}
+    },
+    {
+      "condition": "radioactive_and_weapon_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "political_risks_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "cyber_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "condition": "property_cyber_data_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    }
+  ],
+  "layer_2_benefits": [
+    {
+      "benefit_name": "accidental_death_permanent_disablement",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 100000,
+        "currency": "SGD",
+        "sub_limits": {
+          "12_to_69_years_old": 100000,
+          "70_to_74_years_old": 50000,
+          "below_12_years_old": 10000
+        }
+      }
+    },
+    {
+      "benefit_name": "public_transport_double_cover",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "funeral_expenses_accidental_death",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "child_education_grant",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "family_assistance",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "overseas_medical_expenses",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 70000,
+        "currency": "SGD",
+        "sub_limits": {
+          "TCM_treatment": 750
+        }
+      }
+    },
+    {
+      "benefit_name": "emergency_dental_expenses_accident",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 50000,
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "medical_expenses_in_singapore",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 5000,
+        "currency": "SGD",
+        "sub_limits": {
+          "12_to_69_years_old": 5000,
+          "70_to_74_years_old": 2500,
+          "below_12_years_old": 1000
+        }
+      }
+    },
+    {
+      "benefit_name": "mobility_aid",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "TCM_expenses",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 200,
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "maternity_overseas_medical_expenses",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "overseas_hospitalisation",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 4000,
+        "currency": "SGD",
+        "sub_limits": {
+          "daily_allowance": 200
+        }
+      }
+    },
+    {
+      "benefit_name": "overseas_ICU_hospitalisation",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "hospitalisation_in_singapore",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 1000,
+        "currency": "SGD",
+        "sub_limits": {
+          "daily_allowance": 100
+        }
+      }
+    },
+    {
+      "benefit_name": "medical_travel_assistance",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": "Included",
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "emergency_medical_evacuation_repatriation",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": "Covered",
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "mortal_remains_repatriation",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": "Covered",
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "compassionate_visit",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 5000,
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "emergency_telephone_charges",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "child_guard",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "travel_agency_insolvency",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_cancellation",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 1000,
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "trip_postponement",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "traveller_replacement",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_curtailment",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 1000,
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "trip_disruption",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 200,
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "travel_delay",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 600,
+        "currency": "SGD",
+        "sub_limits": {
+          "delay_per_6_hours": 150
+        }
+      }
+    },
+    {
+      "benefit_name": "flight_diversion",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "overbooked_flight",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "travel_misconnection",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 600,
+        "currency": "SGD",
+        "sub_limits": {
+          "delay_per_6_hours": 100
+        }
+      }
+    },
+    {
+      "benefit_name": "trip_shortened",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_of_frequent_flyer_points",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 500,
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "auto_coverage_extension",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": "Included",
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "delayed_baggage",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 800,
+        "currency": "SGD",
+        "sub_limits": {
+          "delay_per_6_hours": 200
+        }
+      }
+    },
+    {
+      "benefit_name": "loss_damage_personal_belongings",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 2000,
+        "currency": "SGD",
+        "sub_limits": {
+          "max_per_article": 200,
+          "max_for_valuables": 500
+        }
+      }
+    },
+    {
+      "benefit_name": "loss_damage_wedding_clothing",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_of_travel_documents",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 1000,
+        "currency": "SGD",
+        "sub_limits": {
+          "max_for_loss_of_money": 300
+        }
+      }
+    },
+    {
+      "benefit_name": "personal_money",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 300,
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "fraudulent_use_of_credit_card",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 1000,
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "credit_card_outstanding_balance",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "personal_liability",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 500000,
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "hijacking",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 2000,
+        "currency": "SGD",
+        "sub_limits": {
+          "hijack_per_6_hours": 100
+        }
+      }
+    },
+    {
+      "benefit_name": "terrorism",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": "Included",
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "legal_expenses_for_wrongful_arrest",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 300,
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "adventurous_activities",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "golfer",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "unused_entertainment_ticket",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "rental_vehicle_excess",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 100,
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "returning_rental_vehicle",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "home_contents",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "domestic_pets_care",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "passive_war",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "kidnap_and_hostage",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "pre-ex_critical_care",
+      "condition_exist": false,
+      "parameters": {}
+    },
+    {
+      "benefit_name": "24hours_emergency_medical_assistance",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": "Included",
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "24hours_travel_assistance",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": "Included",
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "overseas_medical_expenses_covid_19",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 70000,
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "trip_cancellation_covid_19",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 1000,
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "trip_curtailment_covid_19",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 1000,
+        "currency": "SGD"
+      }
+    },
+    {
+      "benefit_name": "overseas_hospitalisation_allowance_covid_19",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 1000,
+        "currency": "SGD",
+        "sub_limits": {
+          "daily_allowance": 50
+        }
+      }
+    },
+    {
+      "benefit_name": "overseas_quarantine_allowance_covid_19",
+      "condition_exist": true,
+      "parameters": {
+        "coverage_limit": 1000,
+        "currency": "SGD",
+        "sub_limits": {
+          "daily_allowance": 100
+        }
+      }
+    }
+  ],
+  "layer_3_benefit_specific_conditions": [
+    {
+      "benefit_name": "accidental_death_permanent_disablement",
+      "condition": "injury_time_limit_for_compensation",
+      "condition_exist": true,
+      "original_text": "Injury which: (a) falls into one of the Injuries listed in the Scale of Compensation table under Section 1\u2013 Accidental Death & Permanent Disablement; and (b) has lasted for a continuous period of 365 days from the date of the Accident",
+      "parameters": {
+        "time_limit_days": 365
+      }
+    },
+    {
+      "benefit_name": "accidental_death_permanent_disablement",
+      "condition": "loss_by_illness",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "public_transport_double_cover",
+      "condition": "injury_onboard_public_transport",
+      "condition_exist": true,
+      "original_text": "Hijack Any unlawful seizure or the exercise of control by force of a Public Transport",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "funeral_expenses_accidental_death",
+      "condition": "death_due_to_injury_during_trip",
+      "condition_exist": true,
+      "original_text": "Accident or Accidental A sudden and unforeseen event that solely and independently results in either of the following: (a) Injury, disablement or death and which is not caused by any Illness or medical condition",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "child_education_grant",
+      "condition": "injury_during_journey_within_time_limit",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "family_assistance",
+      "condition": "injury_during_journey_within_time_limit",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "overseas_medical_expenses",
+      "condition": "overseas_medical_necessity_requirement",
+      "condition_exist": true,
+      "original_text": "Medical Expenses Expenses necessarily and reasonably incurred for medical treatment of bodily Injury or Illness by a Doctor covered under this Policy",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "overseas_medical_expenses",
+      "condition": "medical_outside_singapore",
+      "condition_exist": true,
+      "original_text": "Overseas The countries beyond the territorial limits of Singapore",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "overseas_medical_expenses",
+      "condition": "medical_expenses_incurred_within_time_limit",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "overseas_medical_expenses",
+      "condition": "excluded_treatments",
+      "condition_exist": true,
+      "original_text": "Any treatment by a specialist must be referred by the attending Doctor and shall not exceed the usual level of charges for similar treatment or medical supplies in the location where the expenses are incurred had this insurance not existed",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "overseas_medical_expenses",
+      "condition": "pre_trip_medical_requirement",
+      "condition_exist": true,
+      "original_text": "The insured persons are not travelling against the advice of a doctor or for the purpose of getting medical treatment",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "overseas_medical_expenses",
+      "condition": "against_travel_advisory",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "emergency_dental_expenses_accident",
+      "condition": "dental_treatment_for_injury_during_journey",
+      "condition_exist": true,
+      "original_text": "Dental Expenses Reasonable and necessary charges for dental treatment due solely to an Accident, carried out by a Dentist practicing within the scope of his/her license",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "emergency_dental_expenses_accident",
+      "condition": "dental_treatment_for_injury_during_journey",
+      "condition_exist": true,
+      "original_text": "Dental Expenses Reasonable and necessary charges for dental treatment due solely to an Accident, carried out by a Dentist practicing within the scope of his/her license",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "emergency_dental_expenses_accident",
+      "condition": "dental_treatment_upon_return",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "emergency_dental_expenses_accident",
+      "condition": "first_dental_treatment_within_time_limit",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "emergency_dental_expenses_accident",
+      "condition": "dental_treatment_by_non_licensed_dentist",
+      "condition_exist": true,
+      "original_text": "Dentist A registered practitioner qualified by a degree in dentistry who is licensed and practicing within the scope of his/her license according to the laws of the country in which such practice is maintained",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "emergency_dental_expenses_accident",
+      "condition": "expenses_caused_by_illness_or_disease",
+      "condition_exist": true,
+      "original_text": "Dental Expenses Reasonable and necessary charges for dental treatment due solely to an Accident, carried out by a Dentist practicing within the scope of his/her license, and not exceeding the usual level of charges for similar treatment in the locality where the expense is incurred had this insurance not existed",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "medical_expenses_in_singapore",
+      "condition": "follow_up_medical_treatment_within_time_limit",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "medical_expenses_in_singapore",
+      "condition": "non_follow_up_medical_treatment_within_time_limit",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "medical_expenses_in_singapore",
+      "condition": "excluded_treatments",
+      "condition_exist": true,
+      "original_text": "Any treatment by a specialist must be referred by the attending Doctor and shall not exceed the usual level of charges for similar treatment or medical supplies in the location where the expenses are incurred had this insurance not existed",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "mobility_aid",
+      "condition": "necessary_mobility_aid_expense",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "TCM_expenses",
+      "condition": "necessary_TCM_expense",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "TCM_expenses",
+      "condition": "follow_up_TCM_treatment_within_time_limit",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "TCM_expenses",
+      "condition": "non_follow_up_TCM_treatment_within_time_limit",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "maternity_overseas_medical_expenses",
+      "condition": "necessary_maternity_overseas_medical_expense",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "maternity_overseas_medical_expenses",
+      "condition": "excluded_pregnancy_related_illness",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "overseas_hospitalisation",
+      "condition": "hospitalisation_outside_singapore",
+      "condition_exist": true,
+      "original_text": "Overseas The countries beyond the territorial limits of Singapore",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "overseas_ICU_hospitalisation",
+      "condition": "ICU_hospitalisation_outside_singapore",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "hospitalisation_in_singapore",
+      "condition": "hospitalisation_in_singapore",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "medical_travel_assistance",
+      "condition": "medical_travel_assistance_available_services",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "emergency_medical_evacuation_repatriation",
+      "condition": "medically_necessary_for_evacuation",
+      "condition_exist": true,
+      "original_text": "Medical Expenses Expenses necessarily and reasonably incurred for medical treatment of bodily Injury or Illness by a Doctor covered under this Policy",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "emergency_medical_evacuation_repatriation",
+      "condition": "medical_evacuation_or_repatriation_approval",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "emergency_medical_evacuation_repatriation",
+      "condition": "expenses_for_services_by_another_party",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "emergency_medical_evacuation_repatriation",
+      "condition": "non_approved_medical_assistance_services",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "emergency_medical_evacuation_repatriation",
+      "condition": "treatment_by_non_medical_practitioner",
+      "condition_exist": true,
+      "original_text": "Doctor A registered practitioner qualified by a medical degree in western medicine who is licensed and practicing within the scope of his/her license according to the laws of the country in which such practice is maintained",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "emergency_medical_evacuation_repatriation",
+      "condition": "reasonable_delay_of_treatment",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "emergency_medical_evacuation_repatriation",
+      "condition": "against_travel_advisory",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "emergency_medical_evacuation_repatriation",
+      "condition": "failed_pretrip_recommendation_medical_check",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "mortal_remains_repatriation",
+      "condition": "death_due_to_injury_during_trip",
+      "condition_exist": true,
+      "original_text": "Accident or Accidental A sudden and unforeseen event that solely and independently results in either of the following: (a) Injury, disablement or death and which is not caused by any Illness or medical condition",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "mortal_remains_repatriation",
+      "condition": "mortal_remains_transportation",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "mortal_remains_repatriation",
+      "condition": "expenses_for_services_by_another_party",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "mortal_remains_repatriation",
+      "condition": "non_approved_medical_assistance_services",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "mortal_remains_repatriation",
+      "condition": "religious_ceremony_or_rites_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "compassionate_visit",
+      "condition": "hospitalisation_outside_singapore_for_more_than_min_days",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "compassionate_visit",
+      "condition": "death_due_to_injury_during_trip",
+      "condition_exist": true,
+      "original_text": "Accident or Accidental A sudden and unforeseen event that solely and independently results in either of the following: (a) Injury, disablement or death and which is not caused by any Illness or medical condition",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "compassionate_visit",
+      "condition": "non_approved_services_exclusions",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "emergency_telephone_charges",
+      "condition": "actual_telephone_charges_requirement",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "emergency_telephone_charges",
+      "condition": "telephone_lines_charges_exclusions",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "travel_agency_insolvency",
+      "condition": "unrecoverable_travel_fares_or_deposits",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "travel_agency_insolvency",
+      "condition": "requirements_of_bankruptcy_or_insolvency",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_cancellation",
+      "condition": "covered_cancellation_reasons",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_cancellation",
+      "condition": "unavoidable_cancellation_of_trip",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_cancellation",
+      "condition": "excluded_cancellation_reasons",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_cancellation",
+      "condition": "known_circumstances_cancellation",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_postponement",
+      "condition": "unavoidable_postponement_of_trip",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_postponement",
+      "condition": "notification_to_service_provider",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "traveller_replacement",
+      "condition": "unavoidable_cancellation_of_trip",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "traveller_replacement",
+      "condition": "replacement_requirements",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_curtailment",
+      "condition": "unavoidable_curtailment_of_trip",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_curtailment",
+      "condition": "trip_curtailment_covered_reasons",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_curtailment",
+      "condition": "known_circumstances_curtailment",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "travel_delay",
+      "condition": "minimum_delay_duration",
+      "condition_exist": true,
+      "original_text": "Travel Delay Pays $150 per 6 hours",
+      "parameters": {
+        "minimum_delay_hours": 6
+      }
+    },
+    {
+      "benefit_name": "travel_delay",
+      "condition": "failure_to_check_in_at_time_given",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "travel_delay",
+      "condition": "covered_delay_reasons",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "travel_delay",
+      "condition": "excluded_delay_reasons",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_disruption",
+      "condition": "unavoidable_disruption_of_trip",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_disruption",
+      "condition": "covered_disruption_reasons",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "flight_diversion",
+      "condition": "unavoidable_diversion_of_flight",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "flight_diversion",
+      "condition": "covered_diversion_reasons",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "flight_diversion",
+      "condition": "failure_to_check_in_at_time_given",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "overbooked_flight",
+      "condition": "unavoidable_overbooking_of_flight",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "travel_misconnection",
+      "condition": "unavoidable_misconnection_of_travel",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "travel_misconnection",
+      "condition": "covered_misconnection_reasons",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "travel_misconnection",
+      "condition": "written_proof_requirement",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "travel_misconnection",
+      "condition": "failure_to_check_in_at_time_given",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "travel_misconnection",
+      "condition": "written_proof_requirement",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "baggage_delay",
+      "condition": "minimum_delay_duration",
+      "condition_exist": true,
+      "original_text": "Baggage Delay Pays $200 per 6 hours",
+      "parameters": {
+        "minimum_delay_hours": 6
+      }
+    },
+    {
+      "benefit_name": "baggage_delay",
+      "condition": "baggage_delayed_overseas",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "baggage_delay",
+      "condition": "written_proof_requirement",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_damage_personal_belongings",
+      "condition": "police_report_requirement",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_damage_personal_belongings",
+      "condition": "compensations_for_loss_and_damaged_belongings",
+      "condition_exist": true,
+      "original_text": "Loss of/Damage to Personal Belongings Max $200 per article or set of articles, Max $500 in total for all Valuables",
+      "parameters": {
+        "max_compensation_per_article": 200,
+        "max_total_compensation": 500
+      }
+    },
+    {
+      "benefit_name": "loss_damage_personal_belongings",
+      "condition": "articles_not_left_unattended",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_damage_personal_belongings",
+      "condition": "steps_of_recovery",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_damage_personal_belongings",
+      "condition": "valuables_handling_requirements",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_damage_personal_belongings",
+      "condition": "proof_of_purchase_requirement",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_damage_personal_belongings",
+      "condition": "unexplained_belongings_loss",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_damage_personal_belongings",
+      "condition": "loss_refund_by_other_party",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_damage_personal_belongings",
+      "condition": "inherent_defects_of_belongings",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_damage_personal_belongings",
+      "condition": "rented_or_hired_belongings",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_damage_personal_belongings",
+      "condition": "excluded_classes_of_belongings",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_damage_wedding_clothing",
+      "condition": "loss_or_damage_during_journey",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_of_travel_documents",
+      "condition": "loss_or_damage_during_journey",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_of_travel_documents",
+      "condition": "additional_travel_expenses",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_of_travel_documents",
+      "condition": "minimum_hospitalization_days",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "loss_of_travel_documents",
+      "condition": "police_report_requirement",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "personal_money",
+      "condition": "loss_during_journey",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "personal_money",
+      "condition": "police_report_requirement",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "fraudulent_use_of_credit_card",
+      "condition": "financial_loss_result",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "fraudulent_use_of_credit_card",
+      "condition": "credit_card_theft_reporting",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "fraudulent_use_of_credit_card",
+      "condition": "report_issued_by_credit_card_issuer",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "credit_card_outstanding_balance",
+      "condition": "death_due_to_injury_during_trip",
+      "condition_exist": true,
+      "original_text": "Accident or Accidental A sudden and unforeseen event that solely and independently results in either of the following: (a) Injury, disablement or death and which is not caused by any Illness or medical condition",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "personal_liability",
+      "condition": "death_of_other_person_due_to_injury_during_trip",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "personal_liability",
+      "condition": "loss_or_damage_of_other_person_property_during_trip",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "personal_liability",
+      "condition": "activities_covered",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "legal_expenses_for_wrongful_arrest",
+      "condition": "wrongful_arrest_during_journey_overseas",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "adventurous_activities",
+      "condition": "suffer_accidental_death_or_injury",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "golfer",
+      "condition": "loss_or_damage_of_golfing_equipment",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "golfer",
+      "condition": "proof_of_purchase_requirement",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "golfer",
+      "condition": "hole_in_one",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "unused_entertainment_ticket",
+      "condition": "reasons_of_unused_ticket",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "unused_entertainment_ticket",
+      "condition": "proof_or_denial_of_any_compensation",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "rental_vehicle_excess",
+      "condition": "accidental_loss_or_damage_to_rental_vehicle",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "rental_vehicle_excess",
+      "condition": "not_under_alcohol_influence",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "rental_vehicle_excess",
+      "condition": "driver_must_be_one_of_insured_persons",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "rental_vehicle_excess",
+      "condition": "loss_damage_exclusion",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "rental_vehicle_excess",
+      "condition": "damage_to_tyres_and_rims",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "returning_rental_vehicle",
+      "condition": "unable_return_due_to_injury",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "home_contents",
+      "condition": "loss_or_damage_of_property_left_vacant",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "home_contents",
+      "condition": "item_beyond_economical_repair",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "domestic_pets_care",
+      "condition": "unable_to_return_to_singapore_due_to_injury",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "domestic_pets_care",
+      "condition": "medical_report_requirement",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "domestic_pets_care",
+      "condition": "written_proof_requirement",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "terrorism",
+      "condition": "loss_suffered_through_acts_of_terrorism",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "passive_war",
+      "condition": "death_or_loss_due_to_war_riot_revolution",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "hijacking",
+      "condition": "hijacked_public_transport",
+      "condition_exist": true,
+      "original_text": "Hijack Any unlawful seizure or the exercise of control by force of a Public Transport",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "hijacking",
+      "condition": "destination_not_to_or_via_country_in_state_of_war",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "kidnap_and_hostage",
+      "condition": "wrongly_held_by_criminal_during_journey",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "kidnap_and_hostage",
+      "condition": "police_report_requirement",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "pre-ex_critical_care",
+      "condition": "following_doctor_advice_for_pre_existing_condition",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "pre-ex_critical_care",
+      "condition": "medical_condition_compliance",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "pre-ex_critical_care",
+      "condition": "pre_existing_condition_compliance",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "pre-ex_critical_care",
+      "condition": "worsening_of_pre_existing_condition_before_trip",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "pre-ex_critical_care",
+      "condition": "terminal_illness",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "pre-ex_critical_care",
+      "condition": "medical_expenses_in_singapore",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "overseas_medical_expenses_covid_19",
+      "condition": "covid_19_detection_during_trip",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "overseas_medical_expenses_covid_19",
+      "condition": "expenses_incurrred_for_services_by_other_party",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_cancellation_covid_19",
+      "condition": "covid_19_detection_during_trip",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_cancellation_covid_19",
+      "condition": "quarantine_requirements",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_cancellation_covid_19",
+      "condition": "covid_19_detection_during_trip",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "trip_cancellation_covid_19",
+      "condition": "quarantine_requirements",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "overseas_hospitalisation_allowance_covid_19",
+      "condition": "hospitalisation_due_to_covid_19",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    },
+    {
+      "benefit_name": "overseas_quarantine_allowance_covid_19",
+      "condition": "isolation_order_requirement",
+      "condition_exist": false,
+      "original_text": "",
+      "parameters": {}
+    }
+  ]
+}

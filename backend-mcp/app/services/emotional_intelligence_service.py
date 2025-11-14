@@ -34,14 +34,14 @@ class EmotionalIntelligenceService:
     def __init__(self):
         """Initialize with Groq client"""
         from app.config import get_settings
-        settings = get_settings()
-        api_key = settings.groq_api_key
+        self.settings = get_settings()
+        api_key = self.settings.groq_api_key
         
         self.groq_client = Groq(api_key=api_key) if api_key else None
         self.use_llm = api_key is not None
         
         if self.use_llm:
-            logger.info("llm_emotion_detection_enabled", model="llama-3.3-70b-versatile")
+            logger.info("llm_emotion_detection_enabled", model=self.settings.groq_model)
         else:
             logger.warning("groq_api_key_missing", message="Falling back to keyword detection")
     
@@ -126,7 +126,7 @@ Respond in JSON format:
         
         try:
             completion = self.groq_client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model=self.settings.groq_model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.1,
                 max_tokens=150

@@ -30,14 +30,14 @@ class IntentClassifier:
     def __init__(self):
         """Initialize with Groq client"""
         from app.config import get_settings
-        settings = get_settings()
-        api_key = settings.groq_api_key
+        self.settings = get_settings()
+        api_key = self.settings.groq_api_key
         
         self.groq_client = Groq(api_key=api_key) if api_key else None
         self.use_llm = api_key is not None
         
         if self.use_llm:
-            logger.info("llm_intent_classification_enabled", model="llama-3.3-70b-versatile")
+            logger.info("llm_intent_classification_enabled", model=self.settings.groq_model)
         else:
             logger.warning("groq_api_key_missing", message="Falling back to keyword-based intent")
     
@@ -106,7 +106,9 @@ Classify the user's PRIMARY intent:
    Examples: "I need insurance", "Which policy should I get?", "Recommend something"
 
 2. **scan_email** - User wants to scan their email for booking details
-   Examples: "Scan my email", "Check my gmail", "Find my bookings in email", "Look in my inbox"
+   Examples: "Scan my email", "Check my gmail", "Find my bookings in email", "Look in my inbox", 
+   "Connect to my gmail", "Fetch my trip details from gmail", "Can you connect to my email?", 
+   "Get my bookings from email", "Pull my trip from gmail"
 
 3. **trip_details** - User is providing information about their trip
    Examples: "Going to Japan", "For 2 weeks", "I'm 35 years old", "December 15-20"
@@ -121,14 +123,16 @@ Classify the user's PRIMARY intent:
    Examples: "Thanks", "Hello", "Hmm", casual responses
 
 **Rules:**
+- ANY mention of "connect to gmail/email" OR "fetch from gmail/email" OR "scan gmail/email" → scan_email (HIGHEST PRIORITY!)
 - "I need insurance" OR "help me find coverage" OR "assist me with insurance" → recommendation_request (starting process)
 - "Can you provide details about the policy?" AFTER seeing recommendations → policy_question
 - If user asks about specific coverage/benefits/terms → policy_question
 - If last bot was asking for trip info AND user provides info → trip_details
 - If last bot showed recommendations AND user asks "what's included?" → policy_question
-- Providing trip information (ages, dates, duration) → trip_details
+- Providing trip information (ages, dates, duration) WITHOUT mentioning email → trip_details
 
-IMPORTANT: "Can you assist me with finding coverage?" is recommendation_request, NOT policy_question
+CRITICAL: If user mentions "gmail", "email", "inbox", "connect", or "fetch" in context of getting trip details, 
+it's ALWAYS scan_email, NOT trip_details or recommendation_request!
 
 Respond in JSON:
 {{
@@ -140,7 +144,7 @@ Respond in JSON:
         
         try:
             completion = self.groq_client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model=self.settings.groq_model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.1,
                 max_tokens=150
@@ -181,6 +185,15 @@ Respond in JSON:
     def _classify_with_keywords(self, message: str) -> IntentClassification:
         """Fallback keyword-based classification"""
         message_lower = message.lower()
+        
+        # Gmail/Email scan (HIGHEST PRIORITY - check first!)
+        if any(word in message_lower for word in ["gmail", "email", "inbox", "scan my"]):
+            if any(word in message_lower for word in ["connect", "fetch", "scan", "check", "get", "pull", "find"]):
+                return IntentClassification(
+                    intent="scan_email",
+                    confidence=0.95,
+                    reasoning="keyword: gmail/email scan request"
+                )
         
         # Policy questions
         if any(word in message_lower for word in ["what", "why", "how", "explain", "details", "provide", "tell me"]):

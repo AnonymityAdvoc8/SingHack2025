@@ -13,6 +13,7 @@ from app.services.tavily_service import TavilyIntelligenceService
 from app.services.conversational_service import ConversationalExtractionService
 from app.services.gmail_agent import GmailAgent
 from app.services.flight_api_agent import FlightAPIAgent
+from app.services.stripe_payment_service import get_stripe_payment_service
 from app.schemas.trip import TripDetailsSchema, QuoteRequestSchema
 from app.utils.logger import get_logger
 
@@ -32,6 +33,7 @@ class MCPTools:
         self.conversational_service = ConversationalExtractionService()  # NEW: Phase 3
         self.gmail_agent = GmailAgent()  # NEW: Agentic AI
         self.flight_api_agent = FlightAPIAgent()  # NEW: Agentic AI
+        self.payment_service = get_stripe_payment_service()  # NEW: Stripe payments
     
     # Tool 1: Compare Policies
     def compare_policies(
@@ -196,36 +198,59 @@ class MCPTools:
         self,
         quote_id: str,
         selected_policy_id: str,
-        user_id: str
+        user_id: str,
+        premium: float,
+        policy_name: str,
+        trip_details: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
-        Initiate policy purchase (Phase 4 - Payment Integration)
+        Initiate policy purchase with Stripe Checkout
         
         Args:
-            quote_id: Quote reference
-            selected_policy_id: Policy to purchase
-            user_id: User identifier
+            quote_id: Quote reference from Ancileo API
+            selected_policy_id: Policy to purchase (Product A/B/C)
+            user_id: User identifier (session_id)
+            premium: Premium amount in SGD
+            policy_name: Display name of the policy
+            trip_details: Trip information for metadata
             
         Returns:
             Payment checkout URL and details
         """
-        logger.info("tool_purchase_policy", quote_id=quote_id)
+        logger.info("tool_purchase_policy", 
+                   quote_id=quote_id,
+                   policy=selected_policy_id,
+                   premium=premium)
         
-        # This will be fully implemented in Phase 4
-        return {
-            "status": "pending_implementation",
-            "message": "Purchase flow will be implemented in Phase 4 with Stripe integration",
-            "quote_id": quote_id,
-            "policy_id": selected_policy_id,
-            "next_phase": "Phase 4: Purchase Flow"
-        }
+        try:
+            # Create Stripe checkout session
+            result = self.payment_service.create_payment_checkout(
+                quote_id=quote_id,
+                policy_name=policy_name,
+                premium=premium,
+                user_id=user_id,
+                metadata={
+                    "policy_id": selected_policy_id,
+                    "trip_details": trip_details
+                }
+            )
+            
+            return result
+            
+        except Exception as e:
+            logger.error("purchase_policy_failed", error=str(e))
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "Failed to initiate purchase"
+            }
     
     def check_payment_status(
         self,
         payment_intent_id: str
     ) -> Dict[str, Any]:
         """
-        Check payment status (Phase 4 - Payment Integration)
+        Check payment status in DynamoDB
         
         Args:
             payment_intent_id: Payment reference
@@ -235,13 +260,17 @@ class MCPTools:
         """
         logger.info("tool_check_payment_status", payment_id=payment_intent_id)
         
-        # This will be fully implemented in Phase 4
-        return {
-            "status": "pending_implementation",
-            "message": "Payment status checking will be implemented in Phase 4",
-            "payment_intent_id": payment_intent_id,
-            "next_phase": "Phase 4: Purchase Flow"
-        }
+        try:
+            result = self.payment_service.check_payment_status(payment_intent_id)
+            return result
+            
+        except Exception as e:
+            logger.error("check_payment_status_failed", error=str(e))
+            return {
+                "success": False,
+                "error": str(e),
+                "payment_intent_id": payment_intent_id
+            }
     
     def analyze_trip_risk(
         self,

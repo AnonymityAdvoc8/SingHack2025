@@ -7,6 +7,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from app.models.policy import Policy, GeneralCondition, Benefit, OperationalDetail
 from app.schemas.policy import PolicySchema, GeneralConditionSchema, BenefitSchema, OperationalDetailSchema
+from app.services.taxonomy_service import get_taxonomy_service
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -17,6 +18,7 @@ class MCPResources:
     
     def __init__(self, db: Session):
         self.db = db
+        self.taxonomy_service = get_taxonomy_service()
     
     # Resource 1: Normalized Policies
     def get_normalized_policies(self, policy_ids: Optional[List[str]] = None) -> List[PolicySchema]:
@@ -210,4 +212,67 @@ class MCPResources:
                 "original": "get_original_policy_text() - For citations and legal precision"
             }
         }
+    
+    # Resource 5: Taxonomy Products (NEW - Uses populated taxonomy JSON)
+    def get_taxonomy_products(self) -> List[str]:
+        """
+        Get all products from populated taxonomy
+        
+        Returns:
+            List of product keys (Product A, Product B, Product C)
+        """
+        logger.info("get_taxonomy_products")
+        return self.taxonomy_service.get_all_products()
+    
+    def get_taxonomy_product_data(self, product_key: str) -> Dict[str, Any]:
+        """
+        Get complete product data from taxonomy
+        
+        Args:
+            product_key: Product identifier
+            
+        Returns:
+            Product data across all 3 layers
+        """
+        logger.info("get_taxonomy_product_data", product=product_key)
+        return self.taxonomy_service.get_product_data(product_key)
+    
+    def check_product_eligibility(
+        self, 
+        product_key: str, 
+        trip_details: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Check eligibility using taxonomy rules
+        
+        Args:
+            product_key: Product to check
+            trip_details: User's trip information
+            
+        Returns:
+            Eligibility result with reasons
+        """
+        logger.info("check_product_eligibility", product=product_key)
+        return self.taxonomy_service.check_eligibility(product_key, trip_details)
+    
+    def compare_taxonomy_products(
+        self,
+        product_keys: Optional[List[str]] = None,
+        trip_details: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Compare products using taxonomy data
+        
+        Args:
+            product_keys: Products to compare (None = all products)
+            trip_details: Optional trip details for eligibility
+            
+        Returns:
+            Comprehensive comparison with recommendation
+        """
+        if not product_keys:
+            product_keys = self.taxonomy_service.get_all_products()
+        
+        logger.info("compare_taxonomy_products", products=product_keys)
+        return self.taxonomy_service.compare_products(product_keys, trip_details)
 

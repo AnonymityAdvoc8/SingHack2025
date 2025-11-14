@@ -24,19 +24,29 @@ class ConversationOrchestrator:
     def __init__(self, db: Session):
         # Import here to avoid circular dependency
         from app.mcp.tools import MCPTools
+        from app.mcp.resources import MCPResources
         from app.services.claims_analytics_service import ClaimsAnalyticsService
         from app.claims.claims_db import get_claims_db
-        from app.services.emotional_intelligence_service import EmotionalIntelligenceService
-        from app.services.proactive_intelligence_service import ProactiveIntelligenceService
+        # NEW: Dynamic LLM-powered services (no hardcoded if-statements!)
+        from app.services.enhanced_emotional_intelligence import get_enhanced_emotional_intelligence
+        from app.services.dynamic_proactive_service import get_dynamic_proactive_service
+        from app.services.dynamic_personality_service import get_dynamic_personality_service
         from app.services.trip_context import TripContext
         from app.services.trip_discovery_agent import TripDiscoveryAgent
         from app.services.gmail_agent import GmailAgent
         from app.services.flight_api_agent import FlightAPIAgent
         from app.services.intent_classifier import IntentClassifier
         from app.services.conversational_response_generator import ConversationalResponseGenerator
+        # TAXONOMY: Real policy data from populated JSON
+        from app.services.taxonomy_service import get_taxonomy_service
+        # MULTI-PRODUCT PRICING: Real pricing from Ancileo API
+        from app.services.multi_product_pricing import get_multi_product_pricing_service
         
         self.db = db
         self.tools = MCPTools(db)
+        self.resources = MCPResources(db)  # NEW: Direct access to taxonomy
+        self.taxonomy_service = get_taxonomy_service()  # NEW: Taxonomy service
+        self.multi_pricing_service = get_multi_product_pricing_service()  # NEW: Multi-product pricing
         self.conversation_history: List[Dict[str, Any]] = []
         self.session_store = get_session_store()
         
@@ -60,11 +70,12 @@ class ConversationOrchestrator:
             logger.warning("claims_analytics_initialization_failed", error=str(e))
             self.claims_analytics = None
         
-        # Initialize AI services
-        self.intent_classifier = IntentClassifier()  # LLM-based intent
-        self.emotional_intelligence = EmotionalIntelligenceService()  # LLM-based emotion
-        self.proactive_intelligence = ProactiveIntelligenceService()
-        self.response_generator = ConversationalResponseGenerator()  # NEW: LLM-generated responses!
+        # Initialize AI services - UPGRADED to Dynamic LLM Services! 🚀
+        self.intent_classifier = IntentClassifier()  # LLM-based intent classification
+        self.emotional_intelligence = get_enhanced_emotional_intelligence()  # ✅ Detects ANY emotion
+        self.proactive_intelligence = get_dynamic_proactive_service()  # ✅ Handles ANY activity/country
+        self.personality_service = get_dynamic_personality_service()  # ✅ NEW: Dynamic personality
+        self.response_generator = ConversationalResponseGenerator()  # LLM-generated responses
     
     async def handle_message(
         self,
@@ -115,6 +126,25 @@ class ConversationOrchestrator:
                     context = {}
                 if "extracted_trip_details" not in context and saved_session.get("extracted_trip_details"):
                     context["extracted_trip_details"] = saved_session["extracted_trip_details"]
+                
+                # Load recommendation data for comparison flow
+                if saved_session.get("taxonomy_comparison"):
+                    context["taxonomy_comparison"] = saved_session["taxonomy_comparison"]
+                    logger.info("taxonomy_comparison_loaded_from_session")
+                
+                if saved_session.get("eligible_products"):
+                    context["eligible_products"] = saved_session["eligible_products"]
+                    logger.info("eligible_products_loaded_from_session", 
+                               count=len(saved_session["eligible_products"]))
+                
+                if saved_session.get("quotes"):
+                    context["quotes"] = saved_session["quotes"]
+                    logger.info("quotes_loaded_from_session", 
+                               count=len(saved_session["quotes"]))
+                
+                if saved_session.get("real_time_intelligence"):
+                    context["real_time_intelligence"] = saved_session["real_time_intelligence"]
+                    logger.info("real_time_intelligence_loaded_from_session")
         
         # Load conversation history from context if provided (for OpenAI compatibility)
         # BUT: Only if it's longer than what we loaded from storage (to avoid overwriting with empty history)
@@ -173,9 +203,15 @@ class ConversationOrchestrator:
                     if context:
                         context["gmail_scan_results"] = None
                     
+                    # Detect emotion for this message (DYNAMIC!)
+                    emotional_profile = self.emotional_intelligence.analyze_emotional_state(
+                        message=message,
+                        conversation_history=self.conversation_history
+                    )
+                    
                     # Auto-proceed to generate quote
                     logger.info("gmail_booking_selected_auto_quote")
-                    return await self._handle_recommendation_flow(message, context, emotional_context)
+                    return await self._handle_recommendation_flow(message, context, emotional_profile)
                 else:
                     # Invalid number
                     return {
@@ -184,14 +220,62 @@ class ConversationOrchestrator:
                         "bookings": scan_results
                     }
             else:
-                # Not a number - show scan results again
-                logger.info("gmail_scan_results_waiting_auto_displaying")
-                intent = "scan_email"
-                intent_result = type('obj', (object,), {
-                    'intent': 'scan_email',
-                    'confidence': 1.0,
-                    'reasoning': 'Gmail scan results from OAuth callback'
-                })()
+                # User sent a non-number message - check if it's an insurance request
+                message_lower = message.lower()
+                is_insurance_request = any(phrase in message_lower for phrase in [
+                    "insurance", "find", "recommend", "quote", "policy", "coverage",
+                    "travel to", "traveling to", "trip to", "need", "i'm going", "i am going"
+                ])
+                
+                if is_insurance_request:
+                    # User wants insurance - extract trip from Gmail results and proceed
+                    logger.info("gmail_auto_using_scan_results_for_insurance")
+                    
+                    # Get all bookings and extract trip details
+                    from app.services.gmail_agent import EmailBooking
+                    scan_results = context["gmail_scan_results"]
+                    
+                    # Use first booking to extract trip details
+                    if scan_results:
+                        first_booking_dict = scan_results[0]
+                        selected_booking = EmailBooking(
+                            email_id=first_booking_dict.get("email_id", ""),
+                            subject=first_booking_dict.get("subject", ""),
+                            sender="",
+                            date=datetime.now(),
+                            booking_type=first_booking_dict.get("booking_type", "unknown"),
+                            extracted_data=first_booking_dict.get("extracted_data", {}),
+                            confidence=first_booking_dict.get("extracted_data", {}).get("confidence", 0.7),
+                            raw_body=""
+                        )
+                        
+                        # Extract trip details from booking
+                        trip_details = self.gmail_agent.extract_trip_details_from_booking(selected_booking)
+                        
+                        # Merge into trip context
+                        self.trip_context.merge(trip_details)
+                        
+                        logger.info("gmail_trip_auto_extracted", trip_details=str(trip_details)[:200])
+                        
+                        # Clear scan results (used)
+                        context["gmail_scan_results"] = None
+                    
+                    # Let normal intent detection proceed
+                    intent_result = self.intent_classifier.classify_intent(
+                        message=message,
+                        conversation_history=self.conversation_history,
+                        trip_context=self.trip_context.to_dict()
+                    )
+                    intent = intent_result.intent
+                else:
+                    # Not an insurance request - show scan results again
+                    logger.info("gmail_scan_results_waiting_auto_displaying")
+                    intent = "scan_email"
+                    intent_result = type('obj', (object,), {
+                        'intent': 'scan_email',
+                        'confidence': 1.0,
+                        'reasoning': 'Gmail scan results from OAuth callback'
+                    })()
         else:
             # Step 1: Detect intent using LLM (smarter than keywords!)
             intent_result = self.intent_classifier.classify_intent(
@@ -206,34 +290,38 @@ class ConversationOrchestrator:
                    confidence=intent_result.confidence,
                    reasoning=intent_result.reasoning[:80] if hasattr(intent_result, 'reasoning') else 'auto')
         
-        # Step 1.5: Detect emotional context for empathetic responses
-        emotional_context = self.emotional_intelligence.detect_emotion(message, self.conversation_history)
+        # Step 1.5: Detect emotional context for empathetic responses (DYNAMIC!)
+        emotional_profile = self.emotional_intelligence.analyze_emotional_state(
+            message=message,
+            conversation_history=self.conversation_history
+        )
         logger.info("orchestrator_emotion_detected", 
-                   emotion=emotional_context.state,
-                   confidence=emotional_context.confidence)
+                   emotion=emotional_profile.primary_emotion,
+                   intensity=emotional_profile.intensity,
+                   confidence=emotional_profile.confidence)
         
         response = {}
-        # Step 2: Route to appropriate flow (pass emotional_context for natural responses)
+        # Step 2: Route to appropriate flow (pass emotional_profile for natural responses)
         if intent == "recommendation_request":
-            response = self._handle_recommendation_flow(message, context, emotional_context)
+            response = await self._handle_recommendation_flow(message, context, emotional_profile)
         
         elif intent == "scan_email":
             response = await self._handle_email_scan_flow(message, context, session_id)
         
         elif intent == "trip_details":
-            response = self._handle_trip_details_flow(message, context, emotional_context)
+            response = await self._handle_trip_details_flow(message, context, emotional_profile)
         
         elif intent == "policy_question":
-            response = self._handle_policy_question_flow(message, context)
+            response = await self._handle_policy_question_flow(message, context)
         
         elif intent == "compare_policies":
             response = self._handle_comparison_flow(message, context)
         
         else:
             # Default: conversational extraction + general response
-            response = self._handle_general_flow(message, context, emotional_context)
+            response = self._handle_general_flow(message, context, emotional_profile)
         
-        # Step 3: Adapt response based on emotional intelligence
+        # Step 3: Adapt response based on emotional intelligence (DYNAMIC!)
         # SKIP for data collection - LLM already generates contextual responses
         if response.get("answer"):
             original_answer = response["answer"]
@@ -245,32 +333,27 @@ class ConversationOrchestrator:
             
             if is_collecting_data:
                 # SKIP emotional adaptation - LLM response generator already handles it
-                # This prevents adding extra fluff on top of already-good LLM responses
                 logger.info("skipping_emotional_adaptation_for_data_collection", 
-                           emotion=emotional_context.state)
+                           emotion=emotional_profile.primary_emotion)
                 response["emotional_context"] = {
-                    "detected_emotion": emotional_context.state,
-                    "confidence": emotional_context.confidence
+                    "detected_emotion": emotional_profile.primary_emotion,
+                    "intensity": emotional_profile.intensity,
+                    "confidence": emotional_profile.confidence
                 }
             elif is_policy_question or is_recommendation:
-                # Only adapt for policy Q&A and recommendations (not data collection)
-                context_type = "policy_question" if is_policy_question else "recommendation"
-                
-                adapted_answer = self.emotional_intelligence.adapt_response(
-                    original_answer, 
-                    emotional_context,
-                    context_type=context_type
-                )
-                response["answer"] = adapted_answer
+                # DISABLED: Emotional adaptation was corrupting responses
+                # Keep original response as-is
+                response["answer"] = original_answer
                 response["emotional_context"] = {
-                    "detected_emotion": emotional_context.state,
-                    "confidence": emotional_context.confidence
+                    "detected_emotion": emotional_profile.primary_emotion,
+                    "intensity": emotional_profile.intensity,
+                    "secondary_emotions": emotional_profile.secondary_emotions,
+                    "concerns": emotional_profile.detected_concerns,
+                    "confidence": emotional_profile.confidence
                 }
-                logger.info("orchestrator_response_adapted", 
-                           emotion=emotional_context.state,
-                           context_type=context_type,
-                           original_length=len(original_answer),
-                           adapted_length=len(adapted_answer))
+                logger.info("orchestrator_emotional_context_added", 
+                           emotion=emotional_profile.primary_emotion,
+                           intensity=emotional_profile.intensity)
 
         # Update conversation history with current exchange
         self.conversation_history.append({"role": "user", "content": message})
@@ -292,17 +375,22 @@ class ConversationOrchestrator:
                 conversation_history=self.conversation_history,
                 extracted_trip_details=response.get("trip_details", {}),
                 trip_context=self.trip_context.to_dict(),  # CRITICAL: Save trip context
-                gmail_scan_results=gmail_scan_results  # NEW: Persist scan results
+                gmail_scan_results=gmail_scan_results,  # Persist scan results
+                taxonomy_comparison=response.get("taxonomy_comparison"),  # Save for comparisons
+                eligible_products=response.get("eligible_products"),  # Save for UI
+                quotes=response.get("quotes"),  # Save pricing data
+                real_time_intelligence=response.get("real_time_intelligence")  # Save claims/risk data
             )
             logger.info("session_saved_to_storage", 
                        session_id=session_id, 
                        history_length=len(self.conversation_history),
                        trip_completeness=f"{self.trip_context.calculate_completeness():.0%}",
-                       has_gmail_results=bool(gmail_scan_results))
+                       has_gmail_results=bool(gmail_scan_results),
+                       has_recommendations=bool(response.get("eligible_products")))
         
         return response
     
-    def _handle_recommendation_flow(
+    async def _handle_recommendation_flow(
         self,
         message: str,
         context: Optional[Dict[str, Any]],
@@ -326,10 +414,12 @@ class ConversationOrchestrator:
         
         # Step 0: Auto-discovery check (INNOVATION!)
         # If user says "I need insurance" and we have no trip data, proactively offer discovery
+        # BUT: Don't trigger for urgent/business travelers who want quick answers
         is_initial_request = any(phrase in message.lower() for phrase in ["need insurance", "want insurance", "buy insurance", "looking for insurance"])
         has_minimal_data = self.trip_context.calculate_completeness() < 0.3
+        is_urgent = any(word in message.lower() for word in ["quick", "fast", "urgent", "asap", "next week", "tomorrow", "business trip"])
         
-        if is_initial_request and has_minimal_data:
+        if is_initial_request and has_minimal_data and not is_urgent:
             logger.info("auto_discovery_offered", reason="initial_insurance_request")
             
             # Check if user mentioned a booking reference
@@ -424,33 +514,28 @@ Which would you prefer?"""
                 message
             )
             
-            # Use passed emotional_context or detect if not provided
+            # Use passed emotional_profile or detect if not provided
             if not emotional_context:
-                emotional_context = self.emotional_intelligence.detect_emotion(last_user_message, self.conversation_history)
+                emotional_context = self.emotional_intelligence.analyze_emotional_state(
+                    message=last_user_message,
+                    conversation_history=self.conversation_history
+                )
             
             # Generate natural, contextual follow-up using LLM
             follow_up = self.response_generator.generate_followup_question(
                 user_message=last_user_message,
-                emotion=emotional_context.state,
+                emotion=emotional_context.primary_emotion,
                 missing_fields=missing_critical,
                 trip_context=self.trip_context.to_dict(),
                 conversation_history=self.conversation_history
             )
             
-            # Add proactive insights based on partial data
-            proactive_insights = self.proactive_intelligence.generate_insights(
-                trip_data=response["trip_details"],
-                claims_data=None,  # Don't have full claims data yet
-                tavily_data=None,
-                policy_recommendations=None
-            )
-            
-            # Add high-priority insights to follow-up question
-            if proactive_insights:
-                high_priority = [i for i in proactive_insights if i.priority == "high"]
-                if high_priority:
-                    insight_text = "\n\n".join([f"{i.emoji} **{i.message}**" for i in high_priority[:2]])
-                    follow_up = f"{insight_text}\n\n{follow_up}"
+            # Skip proactive insights during data collection
+            # We don't want to bombard users with travel warnings while celebrating
+            # their anniversary or asking basic questions. Save insights for recommendations.
+            # 
+            # BEFORE: Showed "🚨 Travel advisory..." during data collection
+            # AFTER: Just warm, natural questions. Insights come later with recommendations.
             
             response["answer"] = follow_up
             response["follow_up_questions"].append(follow_up)
@@ -527,12 +612,39 @@ Which would you prefer?"""
                     logger.error("orchestrator_claims_intel_failed", error=str(e))
                     response["real_time_intelligence"]["historical_claims"] = {"error": str(e)}
         
-        # Step 3: Check eligibility for all policies
-        logger.info("orchestrator_checking_eligibility")
+        # Step 3: Check eligibility using TAXONOMY (real policy data)
+        logger.info("orchestrator_checking_taxonomy_eligibility")
         
         # Normalize trip details before validation
         normalized_trip_details = self._normalize_trip_details(response["trip_details"])
         
+        # NEW: Use taxonomy-based eligibility check for real policy data
+        try:
+            taxonomy_comparison = self.resources.compare_taxonomy_products(
+                product_keys=None,  # Check all products (A, B, C)
+                trip_details=normalized_trip_details
+            )
+            
+            # Get eligible products from taxonomy
+            eligible_products = [
+                product_key 
+                for product_key, eligibility in taxonomy_comparison.get("eligibility", {}).items()
+                if eligibility.get("is_eligible", False)
+            ]
+            
+            logger.info("orchestrator_taxonomy_eligibility_complete", 
+                       eligible_count=len(eligible_products),
+                       products=eligible_products)
+            
+            # Store taxonomy comparison for later use
+            response["taxonomy_comparison"] = taxonomy_comparison
+            response["eligible_products"] = eligible_products
+            
+        except Exception as e:
+            logger.error("orchestrator_taxonomy_check_failed", error=str(e))
+            eligible_products = []
+        
+        # Fallback: Also check database policies if needed
         eligibility_results = self.tools.check_eligibility(
             trip_details=normalized_trip_details
         )
@@ -541,11 +653,16 @@ Which would you prefer?"""
             e["policy_id"] for e in eligibility_results if e.get("is_eligible", False)
         ]
         
-        logger.info("orchestrator_eligible_policies_found", count=len(eligible_policies))
+        logger.info("orchestrator_total_eligible_found", 
+                   taxonomy_count=len(eligible_products),
+                   database_count=len(eligible_policies))
         
         # Step 4: Compare eligible policies with real-time context
-        if eligible_policies:
-            logger.info("orchestrator_comparing_policies", policy_count=len(eligible_policies))
+        # Prioritize taxonomy products (they have real data)
+        if eligible_products or eligible_policies:
+            logger.info("orchestrator_comparing_policies", 
+                       taxonomy_count=len(eligible_products),
+                       database_count=len(eligible_policies))
             
             # Build enhanced user context with Tavily intelligence
             enhanced_context = {
@@ -562,41 +679,103 @@ Which would you prefer?"""
             response["policy_recommendations"] = comparison.get("policies", [])
             response["comparison_summary"] = comparison.get("summary", {})
             
-            # Step 5: Generate actual quotes with pricing 💰
-            logger.info("orchestrator_generating_quotes", policy_count=len(eligible_policies))
+            # Step 5: Generate actual quotes with REAL API pricing for taxonomy products 💰
+            logger.info("orchestrator_generating_quotes", 
+                       database_count=len(eligible_policies),
+                       taxonomy_count=len(eligible_products))
             
+            # Try to get real pricing for taxonomy products first
+            taxonomy_quotes = []
+            if eligible_products:
+                try:
+                    logger.info("orchestrator_fetching_real_api_pricing", products=eligible_products)
+                    pricing_results = await self.multi_pricing_service.get_all_product_pricing(
+                        trip_details=normalized_trip_details,
+                        eligible_products=eligible_products
+                    )
+                    
+                    # Convert pricing results to quote format
+                    for product_key, pricing_data in pricing_results.items():
+                        if not pricing_data.get("error"):
+                            offers = pricing_data.get("offers", [])
+                            for offer in offers:
+                                taxonomy_quotes.append({
+                                    "product_key": product_key,
+                                    "quote_id": pricing_data.get("quote_id"),
+                                    "offer_id": offer.get("offer_id"),
+                                    "product_code": offer.get("product_code"),
+                                    "premium": offer.get("unit_price", 0),
+                                    "currency": offer.get("currency", "SGD"),
+                                    "is_real_pricing": True,
+                                    "source": "ancileo_api"
+                                })
+                    
+                    logger.info("orchestrator_real_pricing_success", 
+                               quotes=len(taxonomy_quotes))
+                    
+                except Exception as e:
+                    logger.error("orchestrator_real_pricing_failed", error=str(e))
+            
+            # Also get database quotes as fallback/additional
+            database_quotes = []
             try:
                 quote_result = self.tools.get_quote(
                     trip_details=normalized_trip_details,
                     policy_ids=eligible_policies
                 )
                 
-                response["quotes"] = quote_result.get("quotes", [])
-                response["total_premium"] = quote_result.get("total_premium", 0)
+                database_quotes = quote_result.get("quotes", [])
                 
                 logger.info(
-                    "orchestrator_quotes_generated",
-                    quote_count=len(response["quotes"]),
-                    total_premium=response["total_premium"]
+                    "orchestrator_database_quotes_generated",
+                    quote_count=len(database_quotes)
                 )
             except Exception as e:
                 logger.error("orchestrator_quote_generation_failed", error=str(e))
-                response["quotes"] = []
+            
+            # Combine quotes (prioritize real API pricing)
+            response["quotes"] = taxonomy_quotes + database_quotes
+            response["real_pricing_count"] = len(taxonomy_quotes)
+            response["total_premium"] = sum(q.get("premium", 0) for q in response["quotes"])
         
-        # Step 6: Generate enhanced answer with Tavily insights + pricing
+        # Step 6: Generate enhanced answer with Tavily insights + TAXONOMY + pricing
         # Determine if this is first-time recommendation (show full) or follow-up (show concise)
         is_first_recommendation = not any(
             indicator in str(self.conversation_history).lower()
             for indicator in ["scootsurance", "traveleasy", "recommended policies", "sgd $"]
         )
         
-        response["answer"] = self._generate_enhanced_answer(
-            response["trip_details"],
-            response["real_time_intelligence"],
-            response["policy_recommendations"],
-            response.get("quotes", []),
-            show_full_intelligence=is_first_recommendation  # Only show full intelligence on first recommendation
-        )
+        # Include taxonomy recommendations in the answer
+        # If we have taxonomy products, the UI will show visual components, so keep text minimal
+        has_visual_component = len(response.get("eligible_products", [])) > 0
+        
+        if has_visual_component:
+            # Concise but informative message when visual component will be shown
+            destination = response["trip_details"].get("destination_country", "your destination")
+            duration = response["trip_details"].get("trip_duration_days", 0)
+            num_products = len(response.get("eligible_products", []))
+            
+            # Get the recommended product
+            recommended_product = response.get("taxonomy_comparison", {}).get("recommendation", "")
+            
+            # Get risk level from claims data
+            claims_data = response.get("real_time_intelligence", {}).get("historical_claims", {})
+            dest_profile = claims_data.get("destination_profile", {})
+            risk_level = dest_profile.get("risk_level", "").upper() if dest_profile.get("total_claims", 0) > 0 else ""
+            
+            # Simple, clean message - all details are in the visual component
+            response["answer"] = f"Perfect! I found {num_products} insurance {'option' if num_products == 1 else 'options'} for your {duration}-day trip to {destination}."
+        else:
+            # Full detailed answer if no visual component
+            response["answer"] = self._generate_enhanced_answer(
+                response["trip_details"],
+                response["real_time_intelligence"],
+                response["policy_recommendations"],
+                response.get("quotes", []),
+                show_full_intelligence=is_first_recommendation,  # Only show full intelligence on first recommendation
+                taxonomy_products=response.get("eligible_products", []),  # NEW: Taxonomy-based products
+                taxonomy_recommendation=response.get("taxonomy_comparison", {}).get("recommendation")  # NEW: Recommended product
+            )
         
         logger.info("orchestrator_recommendation_flow_complete")
         
@@ -702,15 +881,58 @@ Which would you prefer?"""
             }
         
         # Not authorized yet - prompt for authorization
+        # BUT FIRST: Extract any trip details they mentioned and add emotional context!
+        logger.info("gmail_auth_needed_extracting_context")
+        
+        # Extract trip details from their message
+        extraction_context = self.trip_context.to_dict()
+        if context and "conversation_history" in context:
+            extraction_context["conversation_history"] = context["conversation_history"]
+        
+        extraction = self.tools.extract_trip_from_conversation(message, extraction_context)
+        extracted_data = extraction.get("extracted", {})
+        self.trip_context.merge(extracted_data)
+        
+        # Detect emotional context
+        emotional_profile = self.emotional_intelligence.analyze_emotional_state(
+            message=message,
+            conversation_history=self.conversation_history
+        )
+        
+        # Build personalized response with emotional warmth
+        answer_parts = []
+        
+        # Add emotional/contextual greeting if we detected something special
+        destination = self.trip_context.destination_country or extracted_data.get("destination_country")
+        trip_purpose = extracted_data.get("trip_purpose") or ""
+        
+        if emotional_profile.primary_emotion in ["excited", "happy", "celebratory"]:
+            if "birthday" in message.lower():
+                if destination:
+                    answer_parts.append(f"How exciting - celebrating your birthday in {destination}! 🎂✨ ")
+                else:
+                    answer_parts.append("What a wonderful way to celebrate your birthday! 🎂 ")
+            elif "honeymoon" in message.lower():
+                answer_parts.append("Congratulations on your honeymoon! 💍 ")
+            elif "anniversary" in message.lower():
+                answer_parts.append("Happy anniversary! What a special trip! 🎊 ")
+            else:
+                if destination:
+                    answer_parts.append(f"{destination} is such an exciting destination! ✨ ")
+        elif destination:
+            answer_parts.append(f"Perfect! I can help with your {destination} trip. ")
+        
+        # Add Gmail authorization request
+        answer_parts.append("Let me connect to your Gmail to fetch your booking details automatically.\n\n")
+        answer_parts.append("🔒 I'll only access booking confirmations (flights, hotels) - no other emails.\n\n")
+        answer_parts.append("Click below to authorize:")
+        
         auth_url = self.gmail_agent.get_authorization_url(session_id or "no_session")
         
         return {
             "intent": "scan_email",
-            "answer": f"""To scan your Gmail, I need your permission to access your inbox. 🔒
-
-I'll only look for booking confirmations (flights, hotels) and won't access any other emails.
-
-Click the button below to authorize Gmail access:""",
+            "answer": "".join(answer_parts),
+            "trip_details": self.trip_context.to_dict(),  # Include extracted trip context
             "suggested_actions": [
                 {"type": "authorize_gmail", "label": "🔐 Connect Gmail", "icon": "📧", "data": auth_url}
             ],
@@ -719,7 +941,7 @@ Click the button below to authorize Gmail access:""",
             ]
         }
     
-    def _handle_trip_details_flow(
+    async def _handle_trip_details_flow(
         self,
         message: str,
         context: Optional[Dict[str, Any]],
@@ -749,14 +971,17 @@ Click the button below to authorize Gmail access:""",
         if not is_complete:
             missing_fields = self.trip_context.get_missing_critical_fields()
             
-            # Use passed emotional_context or detect if not provided
+            # Use passed emotional_profile or detect if not provided
             if not emotional_context:
-                emotional_context = self.emotional_intelligence.detect_emotion(message, self.conversation_history)
+                emotional_context = self.emotional_intelligence.analyze_emotional_state(
+                    message=message,
+                    conversation_history=self.conversation_history
+                )
             
             # Generate LLM-based natural follow-up
             answer = self.response_generator.generate_followup_question(
                 user_message=message,
-                emotion=emotional_context.state,
+                emotion=emotional_context.primary_emotion,
                 missing_fields=missing_fields,
                 trip_context=self.trip_context.to_dict(),
                 conversation_history=self.conversation_history
@@ -771,15 +996,29 @@ Click the button below to authorize Gmail access:""",
         else:
             # Complete! Auto-switch to recommendation flow and generate quote
             logger.info("trip_complete_auto_generating_quote")
-            return self._handle_recommendation_flow(message, context)
+            return await self._handle_recommendation_flow(message, context)
     
-    def _handle_policy_question_flow(
+    async def _handle_policy_question_flow(
         self,
         message: str,
         context: Optional[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """Handle policy-specific questions"""
+        """Handle policy-specific questions - NOW WITH TAXONOMY SUPPORT!"""
         logger.info("orchestrator_policy_question_flow")
+        
+        # NEW: Check if this is really a coverage/recommendation question that should use taxonomy
+        message_lower = message.lower()
+        is_coverage_inquiry = any(
+            phrase in message_lower
+            for phrase in ["do you have", "insurance that covers", "coverage for", 
+                          "policies that cover", "insurance for", "need insurance"]
+        )
+        
+        # If user has trip context and asking about coverage, use taxonomy!
+        if is_coverage_inquiry and self.trip_context.calculate_completeness() > 0.3:
+            logger.info("policy_question_redirecting_to_taxonomy_recommendation")
+            # Redirect to recommendation flow which uses taxonomy
+            return await self._handle_recommendation_flow(message, context)
         
         # Check if this is a pricing question and we have recent quotes in conversation
         message_lower = message.lower()
@@ -990,7 +1229,25 @@ Click the button below to authorize Gmail access:""",
         # Extract policy IDs from context or message
         policy_ids = context.get("policy_ids", []) if context else []
         
+        # If user asked to compare same policy with itself (or no specific policies mentioned),
+        # default to showing all available taxonomy products from the current recommendation
         if not policy_ids:
+            # Check if we have eligible products from a previous recommendation
+            if context and context.get("eligible_products"):
+                # User already saw recommendations - just return them with comparison data
+                logger.info("comparison_using_existing_recommendations",
+                           products=context.get("eligible_products"))
+                
+                return {
+                    "intent": "compare_policies",
+                    "answer": f"Here's your side-by-side comparison of {len(context['eligible_products'])} insurance options:",
+                    "eligible_products": context.get("eligible_products", []),
+                    "taxonomy_comparison": context.get("taxonomy_comparison"),
+                    "quotes": context.get("quotes", []),
+                    "trip_details": self.trip_context.to_dict(),
+                    "real_time_intelligence": context.get("real_time_intelligence", {})
+                }
+            
             # Default to comparing all policies
             policy_ids = None
         
@@ -1002,11 +1259,65 @@ Click the button below to authorize Gmail access:""",
         # Try to extract pricing from conversation history to include in comparison
         pricing_info = self._extract_pricing_from_history()
         
+        # Check if we have taxonomy products in context (from previous recommendation)
+        # OR if the policies being compared are taxonomy products (Product A/B/C)
+        eligible_products = context.get("eligible_products", []) if context else []
+        
+        # Also check if the policies are taxonomy products by name
+        policies = comparison.get("policies", [])
+        is_taxonomy_comparison = any(
+            policy.get("policy_name") in ["Scootsurance", "TravelEasy Standard", "TravelEasy Pre-Existing"]
+            for policy in policies
+        )
+        
+        has_visual_component = len(eligible_products) > 0 or is_taxonomy_comparison
+        
+        if has_visual_component:
+            # Simple message when visual component is shown
+            num_products = len(eligible_products) if eligible_products else len(policies)
+            answer = f"Here's your side-by-side comparison of {num_products} insurance options:"
+        else:
+            # Full detailed comparison table if no visual component
+            answer = self._format_comparison_answer(comparison, pricing_info)
+        
+        # Check if we have taxonomy data in trip_context (from previous recommendation)
+        # Include it so the UI can show the visual comparison component
+        taxonomy_comparison = None
+        quotes = []
+        trip_details = None
+        real_time_intelligence = None
+        
+        # Try to get taxonomy data from the current session
+        if is_taxonomy_comparison:
+            # We're comparing taxonomy products - get the eligible products list
+            if not eligible_products:
+                # Extract from policies being compared
+                eligible_products = [
+                    policy.get("policy_id") 
+                    for policy in policies 
+                    if policy.get("policy_name") in ["Scootsurance", "TravelEasy Standard", "TravelEasy Pre-Existing"]
+                ]
+            
+            # Include trip details and any cached intelligence
+            trip_details = self.trip_context.to_dict()
+            
+            # Try to get taxonomy comparison data if we have it
+            # This would come from a previous recommendation in the same session
+            if context:
+                taxonomy_comparison = context.get("taxonomy_comparison")
+                quotes = context.get("quotes", [])
+                real_time_intelligence = context.get("real_time_intelligence", {})
+        
         return {
             "intent": "compare_policies",
-            "answer": self._format_comparison_answer(comparison, pricing_info),
+            "answer": answer,
             "comparison": comparison,
-            "pricing": pricing_info
+            "pricing": pricing_info,
+            "eligible_products": eligible_products,  # For UI
+            "taxonomy_comparison": taxonomy_comparison,  # For UI highlighting
+            "quotes": quotes,  # For pricing display
+            "trip_details": trip_details,  # For trip summary
+            "real_time_intelligence": real_time_intelligence  # For risk level
         }
     
     def _handle_general_flow(
@@ -1271,16 +1582,20 @@ Click the button below to authorize Gmail access:""",
         real_time_intelligence: Dict[str, Any],
         policy_recommendations: List[Dict[str, Any]],
         quotes: List[Dict[str, Any]] = None,
-        show_full_intelligence: bool = True
+        show_full_intelligence: bool = True,
+        taxonomy_products: List[str] = None,  # NEW: Taxonomy-based products
+        taxonomy_recommendation: str = None  # NEW: Recommended product from taxonomy
     ) -> str:
         """
-        Generate enhanced answer with Tavily real-time intelligence + pricing
+        Generate enhanced answer with Tavily real-time intelligence + TAXONOMY + pricing
         
         Args:
             trip_details: Extracted trip information
             real_time_intelligence: Tavily + claims data
             policy_recommendations: Matched policies
             quotes: Pricing information
+            taxonomy_products: Eligible products from taxonomy (Product A, B, C)
+            taxonomy_recommendation: Recommended product from taxonomy
             show_full_intelligence: If False, show concise version without all intelligence
         """
         
@@ -1347,11 +1662,11 @@ Click the button below to authorize Gmail access:""",
             real_time_intelligence.get("historical_claims", {}).get("destination_profile", {}).get("total_claims", 0) > 0
         )
         
-        # Part 2.5: Generate proactive insights (NEW!)
-        proactive_insights = self.proactive_intelligence.generate_insights(
+        # Part 2.5: Generate proactive insights (DYNAMIC - handles ANY activity/destination!)
+        proactive_insights = self.proactive_intelligence.generate_all_insights(
             trip_data=trip_details,
             claims_data=claims_data,
-            tavily_data={
+            realtime_data={
                 "health_alerts": risks.get("health_alerts", []) if risks and not risks.get("error") else [],
                 "travel_restrictions": dest_intel.get("travel_restrictions") if dest_intel and not dest_intel.get("error") else None,
                 "weather_alerts": risks.get("weather_alerts") if risks and not risks.get("error") else None
@@ -1368,8 +1683,84 @@ Click the button below to authorize Gmail access:""",
                     parts.append(f"{insight.emoji} **{insight.message}**\n\n")
                 parts.append("\n")
         
-        # Part 3: Policy recommendations with intelligent matching
-        if policy_recommendations:
+        # Part 3: TAXONOMY-BASED Recommendations (Priority)
+        if taxonomy_products or taxonomy_recommendation:
+            if has_intelligence or proactive_insights:
+                parts.append("---\n\n")
+            
+            parts.append("### 🎯 Recommended Coverage (Based on Real Policy Data)\n\n")
+            
+            # Add friendly personality intro
+            if activities and any(act in ["skiing", "diving", "hiking"] for act in activities):
+                parts.append(f"Perfect! I found coverage ideal for your {', '.join(activities)} adventure: ✨\n\n")
+            else:
+                parts.append("Great news! Based on your trip details, here's what I recommend: ✨\n\n")
+            
+            # Show taxonomy recommendation
+            if taxonomy_recommendation:
+                parts.append(f"**Top Recommendation: {taxonomy_recommendation}**\n\n")
+                
+                # Find real pricing for this product (if available)
+                real_price = None
+                for quote in quotes:
+                    if quote.get("product_key") == taxonomy_recommendation and quote.get("is_real_pricing"):
+                        real_price = quote.get("premium")
+                        break
+                
+                # Show price if available
+                if real_price:
+                    parts.append(f"**💰 Price: SGD ${real_price:,.2f}** (Real-time API pricing)\n\n")
+                
+                # Get detailed product info from taxonomy
+                product_data = self.taxonomy_service.get_product_data(taxonomy_recommendation)
+                benefits = product_data.get("layer_2_benefits", [])
+                conditions = product_data.get("layer_1_conditions", [])
+                
+                parts.append(f"**Coverage Details:**\n")
+                parts.append(f"- Total Benefits: {len(benefits)}\n")
+                
+                # Show key coverage amounts
+                for benefit in benefits:
+                    if benefit["benefit_name"] in ["overseas_medical_expenses", "trip_cancellation", "delayed_baggage", "personal_liability"]:
+                        params = benefit.get("parameters", {})
+                        coverage = params.get("coverage_limit")
+                        if coverage and isinstance(coverage, (int, float)):
+                            name = benefit["benefit_name"].replace("_", " ").title()
+                            parts.append(f"- {name}: Up to ${coverage:,} SGD\n")
+                
+                # Show why it's recommended
+                parts.append(f"\n**Why {taxonomy_recommendation}?**\n")
+                for condition in conditions[:3]:  # Show top 3 reasons
+                    if condition["condition"] == "age_eligibility":
+                        params = condition.get("parameters", {})
+                        if "min_age" in params:
+                            parts.append(f"- Age range: {params.get('min_age')}-{params.get('max_age', 'N/A')} years\n")
+                    elif condition["condition"] == "trip_start_singapore":
+                        parts.append("- Covers trips starting from Singapore\n")
+                
+                parts.append("\n")
+            
+            # Show other eligible products with their pricing
+            if taxonomy_products and len(taxonomy_products) > 1:
+                other_products = [p for p in taxonomy_products if p != taxonomy_recommendation]
+                if other_products:
+                    parts.append(f"**Other Eligible Options:**\n\n")
+                    for product in other_products:
+                        # Find pricing
+                        product_price = None
+                        for quote in quotes:
+                            if quote.get("product_key") == product and quote.get("is_real_pricing"):
+                                product_price = quote.get("premium")
+                                break
+                        
+                        if product_price:
+                            parts.append(f"- **{product}**: SGD ${product_price:,.2f}\n")
+                        else:
+                            parts.append(f"- **{product}**: Quote available\n")
+                    parts.append("\n")
+        
+        # Part 3.5: Database Policy recommendations (Fallback/Additional)
+        elif policy_recommendations:
             if has_intelligence or proactive_insights:
                 parts.append("---\n\n")
             

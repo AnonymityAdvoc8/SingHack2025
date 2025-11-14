@@ -139,13 +139,96 @@ class GmailOAuthService:
             # Cache credentials for this session
             self.credentials_cache[state] = credentials
             
-            logger.info("gmail_oauth_success", state=state)
+            logger.info("gmail_oauth_success_demo_mode", state=state, 
+                       note="credentials_cached_will_use_mock_data")
             
             return credentials
             
         except Exception as e:
             logger.error("gmail_oauth_callback_failed", error=str(e))
             return None
+    
+    def get_success_page_html(self) -> str:
+        """
+        Generate success page HTML with auto-close functionality
+        
+        Returns:
+            HTML page that auto-closes after successful OAuth
+        """
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Gmail Connected</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 100vh;
+                    margin: 0;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                }
+                .container {
+                    background: white;
+                    padding: 3rem;
+                    border-radius: 20px;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                    text-align: center;
+                    max-width: 400px;
+                }
+                .success-icon {
+                    font-size: 4rem;
+                    margin-bottom: 1rem;
+                }
+                h1 {
+                    color: #2d3748;
+                    margin: 0 0 1rem 0;
+                }
+                p {
+                    color: #718096;
+                    margin: 0 0 1.5rem 0;
+                }
+                .loading {
+                    display: inline-block;
+                    width: 20px;
+                    height: 20px;
+                    border: 3px solid #e2e8f0;
+                    border-top: 3px solid #667eea;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="success-icon">✅</div>
+                <h1>Gmail Connected!</h1>
+                <p>Searching your emails for booking confirmations...</p>
+                <div class="loading"></div>
+                <p style="margin-top: 1.5rem; font-size: 0.875rem;">
+                    This window will close automatically.
+                </p>
+            </div>
+            <script>
+                // Auto-close window after 2 seconds
+                setTimeout(function() {
+                    window.close();
+                    // If window.close() doesn't work (some browsers block it), 
+                    // redirect to a blank page
+                    if (!window.closed) {
+                        document.body.innerHTML = '<div class="container"><h1>✓ Done!</h1><p>You can close this window now.</p></div>';
+                    }
+                }, 2000);
+            </script>
+        </body>
+        </html>
+        """
     
     def search_emails(
         self,

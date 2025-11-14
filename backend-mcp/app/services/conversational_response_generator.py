@@ -20,14 +20,14 @@ class ConversationalResponseGenerator:
     def __init__(self):
         """Initialize with Groq client"""
         from app.config import get_settings
-        settings = get_settings()
-        api_key = settings.groq_api_key
+        self.settings = get_settings()
+        api_key = self.settings.groq_api_key
         
         self.groq_client = Groq(api_key=api_key) if api_key else None
         self.use_llm = api_key is not None
         
         if self.use_llm:
-            logger.info("conversational_response_generator_enabled", model="llama-3.3-70b-versatile")
+            logger.info("conversational_response_generator_enabled", model=self.settings.groq_model)
         else:
             logger.warning("groq_api_key_missing", message="Using template responses")
     
@@ -70,10 +70,10 @@ class ConversationalResponseGenerator:
             
             # Generate response
             completion = self.groq_client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model=self.settings.groq_model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7,  # More creative for natural responses
-                max_tokens=200
+                max_tokens=500  # Plenty of room for generation
             )
             
             response = completion.choices[0].message.content.strip()
@@ -81,6 +81,13 @@ class ConversationalResponseGenerator:
             # Remove quotes if LLM wrapped response in them
             if response.startswith('"') and response.endswith('"'):
                 response = response[1:-1]
+            
+            # Safety: If LLM returned empty, use fallback
+            if not response or len(response) < 10:
+                logger.warning("llm_returned_empty_using_fallback", 
+                             response_length=len(response),
+                             emotion=emotion)
+                return self._generate_template_followup(missing_fields, trip_context)
             
             logger.info("conversational_response_generated",
                        length=len(response),
@@ -146,78 +153,104 @@ class ConversationalResponseGenerator:
         trip_context: Dict,
         special_context: Dict
     ) -> str:
-        """Build the prompt for LLM response generation"""
+        """Build the prompt for LLM response generation with warmth and empathy"""
         
         # Determine what to ask for
         next_question = self._determine_next_question(missing_fields, trip_context)
         
-        # Build context description
+        # Build rich context description
         context_parts = []
         
         if special_context.get('occasion'):
-            context_parts.append(f"Special occasion: {special_context['occasion']}")
+            context_parts.append(f"🎉 Special occasion: {special_context['occasion']}")
         
         if special_context.get('has_concerns'):
-            context_parts.append("User has expressed concern about coverage")
+            context_parts.append("😟 User has concerns about coverage")
         
         if special_context.get('demographic'):
-            context_parts.append(f"Demographic: {special_context['demographic']}")
+            context_parts.append(f"👥 Demographic: {special_context['demographic']}")
         
         if trip_context.get('destination_country'):
-            context_parts.append(f"Destination: {trip_context['destination_country']}")
+            destination = trip_context['destination_country']
+            city = trip_context.get('destination_city', '')
+            if city:
+                context_parts.append(f"✈️ Destination: {city}, {destination}")
+            else:
+                context_parts.append(f"✈️ Destination: {destination}")
         
-        context_str = " | ".join(context_parts) if context_parts else "Normal trip planning"
+        context_str = "\n".join(context_parts) if context_parts else "Normal trip planning"
         
-        # Build prompt
-        prompt = f"""You are TravelMate, a helpful travel insurance advisor. Respond naturally - warm but not excessive.
+        # Build prompt - Optimized for warmth, empathy, and personalization
+        prompt = f"""You are TravelMate - a warm, empathetic travel insurance advisor who genuinely cares about people's trips.
 
-USER: "{user_message}"
-CONTEXT: {context_str}
-EMOTION: {emotion}
-ASK FOR: {next_question}
+USER'S MESSAGE:
+"{user_message}"
 
-Generate 1-2 sentences that feel natural:
+CONTEXT:
+{context_str}
 
-IF SPECIAL OCCASION:
-- "Congratulations on your 50th! How old are you both?"
-- "Honeymoon - how exciting! How long will you be there?"
-- "Family reunion in Australia sounds lovely. How old are the travelers?"
+USER'S EMOTION: {emotion}
+WHAT YOU NEED TO ASK: {next_question}
 
-IF WORRIED/CONCERNED:
-- "I understand. I'll make sure you're properly covered. How old are you both?"
-- "I can help with that. How long is your trip?"
+YOUR GOAL: Generate a warm, natural response (1-2 sentences) that:
+1. CELEBRATES special moments genuinely (anniversaries, honeymoons, family trips)
+2. EMPATHIZES with concerns or worries  
+3. MATCHES their enthusiasm if they're excited
+4. ASKS for the needed information naturally
+5. Feels like a caring friend, not a bot
 
-IF THEY JUST PROVIDED INFO:
-- "Perfect! How old are you both?" (don't restate what they said)
-- "Got it. When are you traveling?"
+EXAMPLES OF EXCEPTIONAL RESPONSES:
 
-IF NEUTRAL/NORMAL:
-- "How long will you be in Paris?"
-- "How old are you both?"
-- "When are you traveling?"
+50th Anniversary:
+✅ "Congratulations on 50 beautiful years together - what an incredible milestone! ❤️ Paris is the perfect place to celebrate. How long will you both be there?"
+✅ "Wow, 50 years! That's absolutely wonderful - and Paris is so romantic! 💕 How long are you celebrating for?"
 
-TONE:
-✓ Be warm and friendly (like talking to a friend)
-✓ Acknowledge special moments genuinely
-✓ Be concise - max 2 sentences
-✓ DON'T restate what they just told you ("You're going to France for 2 weeks")
-✓ DON'T use generic fluff ("wonderful", "suits your needs", "I'd love to")
-✓ DO show you listened (acknowledge occasion, concern)
-✓ DO get to the question
+Honeymoon:
+✅ "How exciting - congratulations on getting married! 💕 A honeymoon in Bali sounds absolutely perfect. When do you leave?"
+✅ "Honeymoon in the Maldives - that's going to be magical! 🏝️ How long will you be there?"
 
-GOOD EXAMPLES:
-- "Congratulations on your 50th! How old are you both?"
-- "Business trip to Tokyo - got it. How long will you be there?"
-- "Perfect! How old are you both?"
-- "I understand your concern. How old are you both?"
+Family Vacation:
+✅ "A family trip to Tokyo - that's going to create such amazing memories! How many of you are going?"
+✅ "Disney with the kids - they're going to love it! 🎢 How old are the little ones?"
 
-BAD (restating obvious):
-- "You're traveling to France for 2 weeks. How old are you both?"
+Elderly Travelers:
+✅ "A cruise sounds lovely - perfect way to see multiple places! How long is the voyage?"
+✅ "Visiting family in Australia - that's so special. How long will you be staying?"
 
-BAD (too verbose):
-- "What a wonderful milestone! I'm honored to help..."
+Solo Adventure:
+✅ "Solo backpacking through Southeast Asia - brave and exciting! How long is your adventure?"
+✅ "Hiking in Nepal on your own - wow! When do you depart?"
 
-Response (just the text):"""
+Worried/Concerned User:
+✅ "I completely understand your concern - let me help you find coverage that gives you true peace of mind. How old are you both?"
+✅ "I hear you - trip insurance can feel confusing. I'll make this simple. How long is your trip?"
+
+Confused/Overwhelmed User:
+✅ "I totally get it - insurance can feel overwhelming! Let me simplify this for you. Where are you planning to backpack?"
+✅ "I understand the confusion - there IS a lot out there. I'll make it super simple. Where are you heading?"
+
+Elderly/Health Concerns:
+✅ "Visiting your grandkids in Australia sounds wonderful! I'll make sure to find coverage that addresses your health needs. How long will you be staying?"
+✅ "A family visit - that's so special. With health considerations, I'll find the right plan for you both. How long is your trip?"
+
+Business Trip (Impatient):
+✅ "Singapore next week - got it. I can get you a quote in 2 minutes. How many days?"
+✅ "Quick business trip - understood. How long will you be in Singapore?"
+
+TONE RULES:
+✅ Lead with WARMTH and CELEBRATION for special occasions
+✅ Use appropriate emojis: ❤️ 💕 for love/celebration, ✈️ 🏝️ 🎢 for travel  
+✅ Be specific ("50 beautiful years" not just "50th")
+✅ Connect destination to trip type ("Paris is perfect for celebrating")
+✅ Show you're listening (mention specific details they shared)
+✅ Be genuinely happy for them
+✅ Keep it concise (max 2 sentences)
+
+✗ Don't be fake or over-the-top ("I'm absolutely honored and thrilled!!!")
+✗ Don't use corporate speak ("I'd be delighted to assist you today")
+✗ Don't restate what they just said ("You're going to France")
+
+Now generate YOUR response (just the text, no quotes or explanation):"""
         
         return prompt
     

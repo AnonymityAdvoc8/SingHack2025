@@ -17,12 +17,32 @@ class AncileoAPIClient:
     """
     Client for Ancileo/MSIG Travel Insurance API
     Handles pricing and purchase operations
+    NOW SUPPORTS MULTIPLE PRODUCTS WITH DIFFERENT API KEYS!
     """
     
-    def __init__(self):
+    def __init__(self, product_key: Optional[str] = None):
+        """
+        Initialize Ancileo API client
+        
+        Args:
+            product_key: "Product A", "Product B", or "Product C" (optional)
+                        If provided, uses product-specific API key
+        """
         self.pricing_url = settings.ancileo_pricing_url
         self.purchase_url = settings.ancileo_purchase_url
-        self.api_key = settings.ancileo_api_key
+        self.product_key = product_key
+        
+        # Get the appropriate API key for this product
+        if product_key:
+            self.api_key = settings.get_product_api_key(product_key)
+            logger.info("ancileo_client_initialized_for_product", 
+                       product=product_key,
+                       has_api_key=bool(self.api_key))
+        else:
+            # Fallback to general API key
+            self.api_key = settings.ancileo_api_key
+            logger.info("ancileo_client_initialized_general",
+                       has_api_key=bool(self.api_key))
         
         # Match exact headers from documentation
         self.headers = {

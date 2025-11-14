@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     
     # LLM Configuration
     groq_api_key: str
-    groq_model: str = "llama-3.3-70b-versatile"  # Updated: using latest available model
+    groq_model: str = "llama-3.3-70b-versatile"  # Best model for conversational quality
     
     # Tavily Search API (Real-time Intelligence)
     tavily_api_key: str
@@ -60,7 +60,12 @@ class Settings(BaseSettings):
     # MSIG/Ancileo Travel Insurance API
     ancileo_pricing_url: str = "https://dev.api.ancileo.com/v1/travel/front/pricing"
     ancileo_purchase_url: str = "https://dev.api.ancileo.com/v1/travel/front/purchase"
-    ancileo_api_key: str = ""  # Optional: Add API key to enable real MSIG pricing
+    ancileo_api_key: str = ""  # Optional: Deprecated - use product-specific keys below
+    
+    # Product-specific API keys (Three different insurance products)
+    scoot: str = ""  # Product A - Scootsurance API key
+    mag: str = ""    # Product B - MH Insure API key
+    trip: str = ""   # Product C - International Travel API key
     
     # Google OAuth (Gmail Integration)
     google_client_id: str = ""  # Optional: Google OAuth client ID for Gmail scanning
@@ -77,6 +82,23 @@ class Settings(BaseSettings):
         if not self.high_risk_destinations:
             return []
         return [country.strip() for country in self.high_risk_destinations.split(",") if country.strip()]
+    
+    def get_product_api_key(self, product_key: str) -> str:
+        """
+        Get the API key for a specific product
+        
+        Args:
+            product_key: "Product A", "Product B", or "Product C"
+            
+        Returns:
+            API key for the product
+        """
+        product_map = {
+            "Product A": self.scoot,
+            "Product B": self.mag,
+            "Product C": self.trip
+        }
+        return product_map.get(product_key, self.ancileo_api_key or "")
     
     # Security
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8085"]
@@ -106,6 +128,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # Allow extra fields in .env file
 
 
 @lru_cache()

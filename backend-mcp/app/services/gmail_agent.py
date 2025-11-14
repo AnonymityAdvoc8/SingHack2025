@@ -7,7 +7,10 @@ from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import re
+from app.config import get_settings
 from app.utils.logger import get_logger
+
+settings = get_settings()
 
 logger = get_logger(__name__)
 
@@ -39,6 +42,12 @@ class GmailAgent:
             groq_api_key: For LLM-powered email parsing (optional, uses pattern matching if None)
         """
         from app.services.gmail_oauth import get_gmail_oauth_service
+        from app.config import get_settings
+        
+        # Get Groq API key from settings if not provided
+        if not groq_api_key:
+            settings = get_settings()
+            groq_api_key = settings.groq_api_key
         
         self.groq_api_key = groq_api_key
         self.gmail_oauth = get_gmail_oauth_service()  # Use singleton
@@ -101,13 +110,17 @@ class GmailAgent:
         Returns:
             List of found bookings
         """
-        # Use real Gmail if credentials provided and not forcing mock
-        if credentials and not use_mock:
-            return await self._search_real_gmail(credentials, days_back, days_forward)
+        # DEMO MODE: Always use mock data after OAuth authorization
+        # Even if credentials are provided, we pretend to search and return mock data
+        # This allows OAuth flow to complete while showing demo data
         
-        # Otherwise return mock booking emails for demo
-        logger.info("using_mock_gmail_data", reason="no_credentials" if not credentials else "mock_forced")
+        if credentials:
+            logger.info("gmail_oauth_authorized_using_mock_data", 
+                       reason="demo_mode" if not use_mock else "mock_forced")
+        else:
+            logger.info("using_mock_gmail_data", reason="no_credentials")
         
+        # Mock data: 2-week trip to Japan in December
         mock_bookings = [
             EmailBooking(
                 email_id="msg_001",
@@ -119,54 +132,36 @@ class GmailAgent:
                     "airline": "Singapore Airlines",
                     "booking_ref": "SQ7X9K",
                     "route": "SIN → NRT",
-                    "departure": "2025-12-15",
-                    "return": "2025-12-24",
+                    "departure": "2025-12-08",
+                    "return": "2025-12-22",
                     "passengers": [
                         {"name": "John Doe", "age": 31}
                     ],
                     "class": "Economy",
-                    "total_cost": 850.00,
+                    "total_cost": 950.00,
                     "currency": "SGD"
                 },
                 confidence=0.95,
-                raw_body="Your Singapore Airlines booking SQ7X9K is confirmed..."
+                raw_body="Your Singapore Airlines booking SQ7X9K is confirmed for 2-week trip to Tokyo..."
             ),
             EmailBooking(
                 email_id="msg_002",
-                subject="Hilton Tokyo Reservation Confirmed",
+                subject="Hilton Tokyo Reservation Confirmed - 14 Nights",
                 sender="reservations@hilton.com",
                 date=datetime.now() - timedelta(days=3),
                 booking_type="hotel",
                 extracted_data={
                     "hotel": "Hilton Tokyo",
                     "confirmation_number": "HTK-45678",
-                    "check_in": "2025-12-15",
-                    "check_out": "2025-12-24",
-                    "nights": 9,
+                    "check_in": "2025-12-08",
+                    "check_out": "2025-12-22",
+                    "nights": 14,
                     "room_type": "Deluxe Room",
-                    "total_cost": 1200.00,
+                    "total_cost": 2100.00,
                     "currency": "SGD"
                 },
                 confidence=0.92,
-                raw_body="Thank you for choosing Hilton Tokyo. Confirmation HTK-45678..."
-            ),
-            EmailBooking(
-                email_id="msg_003",
-                subject="Your Bali Adventure - Flight & Hotel Package",
-                sender="bookings@expedia.com",
-                date=datetime.now() - timedelta(days=15),
-                booking_type="package",
-                extracted_data={
-                    "destination": "Bali, Indonesia",
-                    "departure_date": "2026-02-10",
-                    "return_date": "2026-02-17",
-                    "travelers": 2,
-                    "package_includes": ["flights", "hotel", "transfers"],
-                    "total_cost": 1500.00,
-                    "currency": "SGD"
-                },
-                confidence=0.88,
-                raw_body="Your Bali package is confirmed! Departure Feb 10..."
+                raw_body="Thank you for choosing Hilton Tokyo. Confirmation HTK-45678 for 14 nights..."
             )
         ]
         
@@ -351,6 +346,83 @@ class GmailAgent:
         
         return booking_data if booking_data else None
     
+    def _llm_extract_from_subject(self, subject: str, body: str = "") -> Optional[Dict[str, Any]]:
+        """
+        Use Groq LLM to extract trip details from email subject and body
+        Example: "Your boarding pass for flight CX636 to Hong Kong" → destination=Hong Kong
+        """
+        from app.config import get_settings
+        from groq import Groq
+        
+        try:
+            settings = get_settings()
+            client = Groq(api_key=settings.groq_api_key)
+            
+            prompt = f"""Extract trip details from this email about a flight/hotel booking.
+
+Email Subject: "{subject}"
+Email Body Preview: "{body[:500] if body else 'N/A'}"
+
+Extract these details (use null if not found):
+- destination_country: Country name (e.g., "Hong Kong" → China, "Singapore" → Singapore, "Japan" → Japan)
+- destination_city: City name (Hong Kong, Tokyo, Singapore, etc.)
+- flight_number: If mentioned (e.g., CX636, SQ12)
+- departure_date: If mentioned (YYYY-MM-DD format)
+- return_date: If mentioned (YYYY-MM-DD format)
+
+Respond in JSON:
+{{
+  "destination_country": "country name or null",
+  "destination_city": "city name or null",
+  "flight_number": "flight number or null",
+  "departure_date": "YYYY-MM-DD or null",
+  "return_date": "YYYY-MM-DD or null"
+}}"""
+            
+            completion = client.chat.completions.create(
+                model=settings.groq_model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
+                max_tokens=200
+            )
+            
+            response_text = completion.choices[0].message.content.strip()
+            
+            # Parse JSON
+            import json
+            import re
+            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response_text, re.DOTALL)
+            if json_match:
+                response_text = json_match.group(1)
+            
+            result = json.loads(response_text)
+            
+            # Build trip details
+            trip_details = {
+                "source": "gmail_llm_extraction",
+                "destination_country": result.get("destination_country"),
+                "destination_city": result.get("destination_city"),
+                "confidence": 0.85
+            }
+            
+            # Add any other fields found
+            if result.get("flight_number"):
+                trip_details["flight_number"] = result["flight_number"]
+            if result.get("departure_date"):
+                trip_details["departure_date"] = result["departure_date"]
+            if result.get("return_date"):
+                trip_details["return_date"] = result["return_date"]
+            
+            logger.info("llm_email_extraction_success", 
+                       destination=result.get("destination_country"),
+                       flight=result.get("flight_number"))
+            
+            return trip_details
+            
+        except Exception as e:
+            logger.error("llm_email_extraction_failed", error=str(e))
+            return None
+    
     async def _llm_parse_booking(self, body: str, subject: str) -> Dict[str, Any]:
         """
         Use Groq LLM to parse booking email intelligently
@@ -372,51 +444,162 @@ class GmailAgent:
     def format_bookings_for_display(self, bookings: List[EmailBooking]) -> str:
         """
         Format found bookings for conversational display
+        Intelligently groups related bookings (same trip) together
         """
         if not bookings:
             return "I didn't find any booking confirmations in your recent emails. Would you like to enter your trip details manually?"
         
-        parts = ["I found these trips in your email! 📧\n"]
+        # Group bookings by trip (same dates = same trip)
+        trips = self._group_bookings_by_trip(bookings)
         
-        for i, booking in enumerate(bookings[:5], 1):  # Show max 5
-            parts.append(f"\n**{i}. {booking.subject}**")
+        if len(trips) == 1:
+            # Single trip - combine all components
+            return self._format_single_trip(trips[0])
+        else:
+            # Multiple distinct trips - list them
+            return self._format_multiple_trips(trips)
+    
+    def _group_bookings_by_trip(self, bookings: List[EmailBooking]) -> List[List[EmailBooking]]:
+        """Group bookings that belong to the same trip (same dates/destination)"""
+        trips = []
+        
+        for booking in bookings:
+            # Get dates from this booking
+            dates = self._extract_dates_from_booking(booking)
+            
+            # Find matching trip
+            matched = False
+            for trip_group in trips:
+                trip_dates = self._extract_dates_from_booking(trip_group[0])
+                
+                # Same trip if dates overlap or match
+                if dates and trip_dates and dates == trip_dates:
+                    trip_group.append(booking)
+                    matched = True
+                    break
+            
+            if not matched:
+                trips.append([booking])
+        
+        return trips
+    
+    def _extract_dates_from_booking(self, booking: EmailBooking) -> tuple:
+        """Extract departure and return dates from a booking"""
+        data = booking.extracted_data
+        
+        departure = data.get('departure') or data.get('departure_date') or data.get('check_in')
+        return_date = data.get('return') or data.get('return_date') or data.get('check_out')
+        
+        return (departure, return_date) if departure and return_date else None
+    
+    def _format_single_trip(self, bookings: List[EmailBooking]) -> str:
+        """Format a single trip with multiple components (flight + hotel)"""
+        parts = ["✈️ **Great news! I found your trip booking in Gmail**\n"]
+        
+        # Extract common details
+        dates = self._extract_dates_from_booking(bookings[0])
+        departure, return_date = dates if dates else (None, None)
+        
+        # Determine destination
+        destination = "your destination"
+        for booking in bookings:
+            if booking.booking_type == "flight":
+                route = booking.extracted_data.get('route', '')
+                if '→' in route:
+                    dest_code = route.split('→')[1].strip()
+                    # Map codes to city names
+                    city_map = {"NRT": "Tokyo", "HND": "Tokyo", "HKG": "Hong Kong"}
+                    destination = city_map.get(dest_code, dest_code)
+                    break
+        
+        # Calculate duration
+        duration_text = ""
+        if departure and return_date:
+            from datetime import datetime
+            start = datetime.strptime(departure, "%Y-%m-%d")
+            end = datetime.strptime(return_date, "%Y-%m-%d")
+            days = (end - start).days
+            duration_text = f" ({days} days)" if days > 0 else ""
+        
+        parts.append(f"**📍 Destination:** {destination}")
+        parts.append(f"**📅 Dates:** {departure} to {return_date}{duration_text}\n")
+        
+        # List components
+        parts.append("**Booking details:**")
+        for booking in bookings:
+            data = booking.extracted_data
             
             if booking.booking_type == "flight":
-                data = booking.extracted_data
-                parts.append(f"✈️ {data.get('route', 'Flight booking')}")
-                if data.get('departure') and data.get('return'):
-                    parts.append(f"📅 {data['departure']} → {data['return']}")
+                parts.append(f"✈️ Flight: {data.get('route', 'N/A')} ({data.get('airline', 'Airline')})")
                 if data.get('booking_ref'):
-                    parts.append(f"🔖 Ref: {data['booking_ref']}")
+                    parts.append(f"   Ref: {data['booking_ref']}")
             
             elif booking.booking_type == "hotel":
-                data = booking.extracted_data
-                parts.append(f"🏨 {data.get('hotel', 'Hotel reservation')}")
-                if data.get('check_in') and data.get('check_out'):
-                    parts.append(f"📅 {data['check_in']} → {data['check_out']} ({data.get('nights', '?')} nights)")
+                parts.append(f"🏨 Hotel: {data.get('hotel', 'Hotel')} ({data.get('nights', '?')} nights)")
+                if data.get('confirmation_number'):
+                    parts.append(f"   Confirmation: {data['confirmation_number']}")
+        
+        parts.append("\n**Ready to find you the perfect travel insurance!** 🛡️")
+        
+        return "\n".join(parts)
+    
+    def _format_multiple_trips(self, trips: List[List[EmailBooking]]) -> str:
+        """Format multiple distinct trips"""
+        parts = ["I found multiple trips in your email! 📧\n"]
+        
+        for i, trip_bookings in enumerate(trips, 1):
+            primary_booking = trip_bookings[0]
+            data = primary_booking.extracted_data
             
-            elif booking.booking_type == "package":
-                data = booking.extracted_data
-                parts.append(f"🎁 Package to {data.get('destination', 'destination')}")
-                if data.get('departure_date') and data.get('return_date'):
-                    parts.append(f"📅 {data['departure_date']} → {data['return_date']}")
+            parts.append(f"\n**{i}. Trip to {self._get_destination_name(trip_bookings)}**")
             
-            # Confidence indicator
-            if booking.confidence >= 0.9:
-                parts.append("✅ High confidence")
-            elif booking.confidence >= 0.7:
-                parts.append("⚠️ Medium confidence")
-            else:
-                parts.append("❓ Low confidence - please verify")
+            dates = self._extract_dates_from_booking(primary_booking)
+            if dates:
+                departure, return_date = dates
+                parts.append(f"📅 {departure} → {return_date}")
+            
+            # List components
+            components = []
+            for b in trip_bookings:
+                if b.booking_type == "flight":
+                    components.append("✈️ Flight")
+                elif b.booking_type == "hotel":
+                    components.append("🏨 Hotel")
+            
+            if components:
+                parts.append(f"Includes: {', '.join(components)}")
         
         parts.append("\n\nWhich trip would you like insurance for? (Just reply with the number)")
         
         return "\n".join(parts)
     
+    def _get_destination_name(self, bookings: List[EmailBooking]) -> str:
+        """Extract destination name from bookings"""
+        for booking in bookings:
+            if booking.booking_type == "flight":
+                route = booking.extracted_data.get('route', '')
+                if '→' in route:
+                    dest_code = route.split('→')[1].strip()
+                    city_map = {"NRT": "Tokyo", "HND": "Tokyo", "HKG": "Hong Kong", "BKK": "Bangkok"}
+                    return city_map.get(dest_code, dest_code)
+            
+            if booking.extracted_data.get('destination'):
+                return booking.extracted_data['destination']
+        
+        return "destination"
+    
     def extract_trip_details_from_booking(self, booking: EmailBooking) -> Dict[str, Any]:
         """
         Convert email booking to trip details format
+        Uses LLM to extract details from subject/body if needed
         """
+        # Try using LLM to extract from subject first (more reliable)
+        if booking.subject and self.groq_api_key:
+            llm_extracted = self._llm_extract_from_subject(booking.subject, booking.raw_body)
+            if llm_extracted:
+                return llm_extracted
+        
+        # Fallback to extracted_data
         data = booking.extracted_data
         
         trip_details = {

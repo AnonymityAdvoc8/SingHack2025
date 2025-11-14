@@ -1,0 +1,180 @@
+{
+  "payment_32040efaabf9": {
+    "payment_intent_id": "payment_32040efaabf9",
+    "user_id": "guest",
+    "quote_id": "test_quote_1",
+    "payment_status": "pending",
+    "amount": 6609,
+    "currency": "SGD",
+    "product_name": "TravelEasy Standard",
+    "created_at": "2025-11-11T05:57:59.912984",
+    "updated_at": "2025-11-11T05:58:00.697719",
+    "metadata": {
+      "policy_id": "Product_B",
+      "trip_details": null
+    },
+    "stripe_session_id": "cs_test_a1AA8a6ALdh36w6u5nbPdAXvcYdBAtHULPVNGHGxDBtnWRhVv7X5acT3EJ"
+  },
+  "payment_7bacec09c3fa": {
+    "payment_intent_id": "payment_7bacec09c3fa",
+    "user_id": "session_1762841019590_6uuhns",
+    "quote_id": "69a1a303-80b3-405c-bf81-c7dcc5614975",
+    "payment_status": "pending",
+    "amount": 6609,
+    "currency": "SGD",
+    "product_name": "TravelEasy Standard",
+    "created_at": "2025-11-11T06:05:12.154444",
+    "updated_at": "2025-11-11T06:05:12.489510",
+    "metadata": {
+      "policy_id": "Product B",
+      "trip_details": {
+        "destination": "Japan",
+        "departure_date": "2025-12-08",
+        "return_date": "2025-12-22",
+        "num_travelers": 1
+      }
+    },
+    "stripe_session_id": "cs_test_a1IwA5bwiDY8pzj1zkuyMHoNcadYu2B4nIKtEYkQ9Vjp6qbzWEvZKiWQj3"
+  },
+  "payment_26b113e60b3b": {
+    "payment_intent_id": "payment_26b113e60b3b",
+    "user_id": "session_1762841405957_e8atji",
+    "quote_id": "da8c40d7-3ccb-42f3-bce3-ecfab1a8fcf9",
+    "payment_status": "pending",
+    "amount": 6609,
+    "currency": "SGD",
+    "product_name": "TravelEasy Standard",
+    "created_at": "2025-11-11T06:10:49.815990",
+    "updated_at": "2025-11-11T06:10:50.184840",
+    "metadata": {
+      "policy_id": "Product B",
+      "trip_details": {
+        "destination": "Japan",
+        "departure_date": "2025-12-08",
+        "return_date": "2025-12-22",
+        "num_travelers": 1
+      }
+    },
+    "stripe_session_id": "cs_test_a19fnneiULq7GvP3pGj4fshgbjWA3p45xwJ00va7jDTbT0OvWgC4nlZlss"
+  },
+  "payment_c953e42db865": {
+    "payment_intent_id": "payment_c953e42db865",
+    "user_id": "session_1762841893900_ncl31",
+    "quote_id": "demo_quote",
+    "payment_status": "pending",
+    "amount": 0,
+    "currency": "SGD",
+    "product_name": "TravelEasy Standard",
+    "created_at": "2025-11-11T06:19:28.364682",
+    "updated_at": "2025-11-11T06:19:28.684378",
+    "metadata": {
+      "policy_id": "Product B",
+      "trip_details": {
+        "destination": "Japan",
+        "departure_date": "2025-12-08",
+        "return_date": "2025-12-22",
+        "num_travelers": 1
+      }
+    },
+    "stripe_session_id": "cs_test_a1aLz6iM4R3rLQhiOYFAkIZX1aiKZ9J9mlVhzvmmzOjiuFWb34oOm8dpKX"
+  },
+  "payment_9dd41e2a49d5": {
+    "payment_intent_id": "payment_9dd41e2a49d5",
+    "user_id": "session_1762842265635_vmejkl",
+    "quote_id": "1b6af2ee-a801-4145-97fe-bf86d72fed75",
+    "payment_status": "pending",
+    "amount": 6609,
+    "currency": "SGD",
+    "product_name": "TravelEasy Standard",
+    "created_at": "2025-11-11T06:25:38.719865",
+    "updated_at": "2025-11-11T06:25:39.082523",
+    "metadata": {
+      "policy_id": "Product B",
+      "trip_details": {
+        "destination": "Japan",
+        "departure_date": "2025-12-08",
+        "return_date": "2025-12-22",
+        "num_travelers": 1
+      }
+    },
+    "stripe_session_id": "cs_test_a19MM6pC3O5CDtJthHlZyoA3mNxlIRlompRxqToQDPSFVFvgpTGuyLXtJP"
+  },
+  "payment_b9ae62ca3e86": {
+    "payment_intent_id": "payment_b9ae62ca3e86",
+    "user_id": "session_1762842487950_v9egab",
+    "quote_id": "11035532-cec1-4de0-82f4-b4ad68ed8cf2",
+    "payment_status": "completed",
+    "amount": 6609,
+    "currency": "SGD",
+    "product_name": "TravelEasy Standard",
+    "created_at": "2025-11-11T06:30:23.606166",
+    "updated_at": "2025-11-11T06:30:56.365341",
+    "metadata": {
+      "policy_id": "Product B",
+      "trip_details": {
+        "destination": "Japan",
+        "departure_date": "2025-12-08",
+        "return_date": "2025-12-22",
+        "num_travelers": 1
+      }
+    },
+    "stripe_session_id": "cs_test_a1abI29kiGhAOsoMPx9z6ig3iC6HzbbySXc7HjvdyQCXPZwN4jP9jSSRyf",
+    "stripe_payment_intent": "pi_3SSB6Q2f1RQuFce00U0Fp2aC",
+    "policy_number": "POL-20251111-58BF",
+    "needs_policy_issuance": true,
+    "policy_issued": true,
+    "policy_issue_date": "2025-11-11T06:30:56.379129"
+  },
+  "payment_546792455040": {
+    "payment_intent_id": "payment_546792455040",
+    "user_id": "session_1762842730172_7437l",
+    "quote_id": "f54b526e-d037-420d-a193-bc74c40da40a",
+    "payment_status": "completed",
+    "amount": 6609,
+    "currency": "SGD",
+    "product_name": "TravelEasy Standard",
+    "created_at": "2025-11-11T06:34:23.244964",
+    "updated_at": "2025-11-11T06:34:45.236022",
+    "metadata": {
+      "policy_id": "Product B",
+      "trip_details": {
+        "destination": "Japan",
+        "departure_date": "2025-12-08",
+        "return_date": "2025-12-22",
+        "num_travelers": 1
+      }
+    },
+    "stripe_session_id": "cs_test_a14xfufuA6vaNRPFTMd9d2pZ07ikHR0cVYEmLcormSBph6CHe9CRdgRuzk",
+    "stripe_payment_intent": "pi_3SSBA82f1RQuFce01RMmjGh4",
+    "policy_number": "POL-20251111-0CCF",
+    "needs_policy_issuance": true,
+    "policy_issued": true,
+    "policy_issue_date": "2025-11-11T06:34:45.246839"
+  },
+  "payment_820dd9dd8aac": {
+    "payment_intent_id": "payment_820dd9dd8aac",
+    "user_id": "session_1762843668652_oxz9vfh",
+    "quote_id": "271353dd-3ca7-4d39-950e-c3ccc04c74c9",
+    "payment_status": "completed",
+    "amount": 6609,
+    "currency": "SGD",
+    "product_name": "TravelEasy Standard",
+    "created_at": "2025-11-11T06:49:37.416272",
+    "updated_at": "2025-11-11T06:49:58.326547",
+    "metadata": {
+      "policy_id": "Product B",
+      "trip_details": {
+        "destination": "Japan",
+        "departure_date": "2025-12-08",
+        "return_date": "2025-12-22",
+        "num_travelers": 1
+      }
+    },
+    "stripe_session_id": "cs_test_a13euBqGtoUgiD9eG3uzBMR0PbxAMZxdBoU8OWq4AzkXgbJzzrEKt3QL2q",
+    "stripe_payment_intent": "pi_3SSBOr2f1RQuFce00aAkvEGQ",
+    "policy_number": "POL-20251111-FB2D",
+    "needs_policy_issuance": true,
+    "policy_issued": true,
+    "policy_issue_date": "2025-11-11T06:49:58.343900"
+  }
+}

@@ -127,28 +127,23 @@ class QuestionAnsweringService:
     ) -> PolicyQuestionAnswerSchema:
         """Generate answer using Groq LLM"""
         
-        prompt = f"""You are an expert insurance policy advisor. Answer the user's question based ONLY on the provided policy information.
+        prompt = f"""You are a friendly, helpful insurance advisor. Answer the user's question based on the provided policy information.
 
 IMPORTANT RULES:
-1. Provide accurate, specific answers citing exact policy details
-2. If the answer varies by policy, explain the differences clearly
-3. Include specific coverage amounts and conditions
-4. Cite which policy you're referencing
-5. If information is not in the provided policies, say so clearly
-6. Be precise about exclusions and limitations
+1. Be CONCISE and CONVERSATIONAL - keep answers short (2-4 sentences max)
+2. Get straight to the point - no lengthy explanations
+3. For comparison questions: Focus ONLY on the key difference
+4. Skip formal citations like "(TravelEasy Standard policy, Page 1)" - just mention the policy name naturally
+5. Don't repeat the question back to the user
+6. No "References" section at the end
+7. Use simple, clear language
 
 POLICY INFORMATION:
 {context}
 
 USER QUESTION: {question}
 
-Provide a clear, helpful answer. Include:
-1. Direct answer to the question
-2. Specific policy references
-3. Any relevant warnings or exclusions
-4. Comparison if multiple policies are involved
-
-ANSWER:"""
+Provide a SHORT, conversational answer (2-4 sentences):"""
         
         try:
             response = self.groq_client.chat.completions.create(
@@ -156,7 +151,7 @@ ANSWER:"""
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert insurance policy advisor. Provide accurate, helpful answers based strictly on the policy information provided."
+                        "content": "You are a friendly insurance advisor. Keep answers SHORT and conversational - 2-4 sentences max."
                     },
                     {
                         "role": "user",
@@ -164,16 +159,21 @@ ANSWER:"""
                     }
                 ],
                 temperature=0.2,  # Low temperature for factual accuracy
-                max_tokens=1500
+                max_tokens=300  # Reduced from 1500 to enforce brevity
             )
             
             answer = response.choices[0].message.content.strip()
+            
+            # Remove any "References:" or "Sources:" sections that the LLM might add
+            answer = answer.split("References:")[0].strip()
+            answer = answer.split("Sources:")[0].strip()
+            answer = answer.replace("---", "").strip()
             
             # Extract citations (simple implementation - find policy names mentioned)
             citations = []
             for policy in policies:
                 if policy.policy_name.lower() in answer.lower():
-                    citations.append(f"{policy.policy_name} - See policy document for full details")
+                    citations.append(policy.policy_name)
             
             # Confidence based on whether we found relevant info
             confidence = 0.9 if citations else 0.6

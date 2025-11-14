@@ -32,9 +32,13 @@ class SessionStore:
         extracted_trip_details: Optional[Dict[str, Any]] = None,
         trip_context: Optional[Dict[str, Any]] = None,
         gmail_authorized: Optional[bool] = None,
-        gmail_scan_results: Optional[List[Dict[str, Any]]] = None
+        gmail_scan_results: Optional[List[Dict[str, Any]]] = None,
+        taxonomy_comparison: Optional[Dict[str, Any]] = None,
+        eligible_products: Optional[List[str]] = None,
+        quotes: Optional[List[Dict[str, Any]]] = None,
+        real_time_intelligence: Optional[Dict[str, Any]] = None
     ) -> bool:
-        """Save session to disk with trip context, Gmail auth, and scan results"""
+        """Save session to disk with trip context, Gmail auth, scan results, and recommendation data"""
         if not session_id:
             return False
             
@@ -46,7 +50,11 @@ class SessionStore:
                     "extracted_trip_details": extracted_trip_details or {},
                     "trip_context": trip_context or {},
                     "gmail_authorized": gmail_authorized or False,
-                    "gmail_scan_results": gmail_scan_results or [],  # NEW: Persist scan results
+                    "gmail_scan_results": gmail_scan_results or [],
+                    "taxonomy_comparison": taxonomy_comparison or {},
+                    "eligible_products": eligible_products or [],
+                    "quotes": quotes or [],
+                    "real_time_intelligence": real_time_intelligence or {},
                     "last_updated": datetime.utcnow().isoformat(),
                     "created_at": datetime.utcnow().isoformat()
                 }

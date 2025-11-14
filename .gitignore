@@ -39,6 +39,9 @@ venv.bak/
 *.sqlite3
 travelmate.db
 
+# Session Storage
+.sessions/
+
 # IDEs
 .vscode/
 .idea/

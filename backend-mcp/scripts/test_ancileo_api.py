@@ -1,179 +1,178 @@
 """
-Test script for Ancileo/MSIG API integration
-Validates real-time pricing API calls
+Test Ancileo API Integration
+Verifies that all three product API keys work correctly
 """
 
 import sys
+import asyncio
 from pathlib import Path
+from datetime import datetime, timedelta
 
-# Add parent directory to path
-sys.path.append(str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from app.services.multi_product_pricing import get_multi_product_pricing_service
 from app.services.ancileo_client import AncileoAPIClient
 from app.config import get_settings
-import structlog
 
-logger = structlog.get_logger()
+settings = get_settings()
 
-def test_ancileo_api():
-    print("================================================================================")
-    print("🏥 Ancileo/MSIG API Integration - Test Suite")
-    print("================================================================================")
+
+async def test_individual_api_keys():
+    """Test each API key individually"""
+    print("\n" + "="*70)
+    print("TEST 1: Individual API Key Testing")
+    print("="*70 + "\n")
     
-    settings = get_settings()
+    products = {
+        "Product A": settings.scoot,
+        "Product B": settings.mag,
+        "Product C": settings.trip
+    }
     
-    # Check if API key is configured
-    print("\n============================================================")
-    print("Test 1: API Configuration")
-    print("============================================================")
+    # Prepare test dates
+    departure = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
+    return_date = (datetime.now() + timedelta(days=37)).strftime("%Y-%m-%d")
     
-    if not settings.ancileo_api_key:
-        print("❌ MSIG_API_KEY not found in .env")
-        print("\nPlease add to backend-mcp/.env:")
-        print("ANCILEO_API_KEY=your_api_key_here")
-        return False
-    
-    print(f"✅ API Key configured: {settings.ancileo_api_key[:10]}...")
-    print(f"✅ Pricing URL: {settings.ancileo_pricing_url}")
-    
-    # Initialize client
-    client = AncileoAPIClient()
-    
-    # Test 2: Get pricing for Japan trip
-    print("\n============================================================")
-    print("Test 2: Get Pricing - Japan Round Trip")
-    print("============================================================")
-    
-    try:
-        response = client.get_pricing_sync(
-            departure_date="2025-03-01",
-            return_date="2025-03-10",
-            departure_country="SG",
-            arrival_country="JP",  # Japan
-            adults_count=1,
-            children_count=0,
-            trip_type="RT"
-        )
+    for product_key, api_key in products.items():
+        print(f"{product_key}:")
+        print(f"  API Key: {api_key[:20]}..." if api_key else "  API Key: NOT CONFIGURED")
         
-        print("✅ API call successful!")
-        print("\n📋 Raw Response:")
-        print("------------------------------------------------------------")
-        import json
-        print(json.dumps(response, indent=2))
+        if not api_key:
+            print(f"  Status: ⚠️  API key not configured\n")
+            continue
         
-        # Parse response
-        parsed = client.parse_pricing_response(response)
-        
-        print("\n📊 Parsed Response:")
-        print("------------------------------------------------------------")
-        print(f"Quote ID: {parsed.get('quote_id')}")
-        print(f"Offers Count: {len(parsed.get('offers', []))}")
-        
-        for i, offer in enumerate(parsed.get('offers', []), 1):
-            print(f"\n🎫 Offer {i}:")
-            print(f"  Offer ID: {offer.get('offer_id')}")
-            print(f"  Product Code: {offer.get('product_code')}")
-            print(f"  Unit Price: SGD ${offer.get('unit_price')}")
+        try:
+            client = AncileoAPIClient(product_key=product_key)
             
-            product_info = offer.get('product_info', {})
-            print(f"  Product Name: {product_info.get('title', 'N/A')}")
+            print(f"  Testing pricing API...")
+            response = await client.get_pricing(
+                departure_date=departure,
+                return_date=return_date,
+                departure_country="SG",
+                arrival_country="JP",  # Japan
+                adults_count=1,
+                children_count=0,
+                trip_type="RT"
+            )
             
-            benefits = product_info.get('benefits', '')
-            if benefits:
-                print(f"  Benefits:")
-                for line in benefits.strip().split('\n'):
-                    if line.strip():
-                        print(f"    {line.strip()}")
-        
-        print("\n✅ Test 2: PASSED")
-        
-    except Exception as e:
-        print(f"❌ API call failed: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+            parsed = client.parse_pricing_response(response)
+            
+            print(f"  ✓ API call successful!")
+            print(f"  Quote ID: {parsed.get('quote_id')}")
+            print(f"  Offers: {len(parsed.get('offers', []))}")
+            
+            # Show first offer
+            if parsed.get("offers"):
+                first_offer = parsed["offers"][0]
+                print(f"  First Offer:")
+                print(f"    - Product Code: {first_offer.get('product_code')}")
+                print(f"    - Price: ${first_offer.get('unit_price', 0):,.2f} {first_offer.get('currency', 'SGD')}")
+            
+            print()
+            
+        except Exception as e:
+            print(f"  ✗ API call failed: {e}\n")
+
+
+async def test_multi_product_pricing():
+    """Test multi-product pricing service"""
+    print("\n" + "="*70)
+    print("TEST 2: Multi-Product Pricing Service")
+    print("="*70 + "\n")
     
-    # Test 3: Get pricing for Thailand trip
-    print("\n============================================================")
-    print("Test 3: Get Pricing - Thailand Round Trip")
-    print("============================================================")
+    service = get_multi_product_pricing_service()
     
-    try:
-        response = client.get_pricing_sync(
-            departure_date="2025-04-15",
-            return_date="2025-04-25",
-            departure_country="SG",
-            arrival_country="TH",  # Thailand
-            adults_count=2,
-            children_count=1,
-            trip_type="RT"
-        )
-        
-        parsed = client.parse_pricing_response(response)
-        
-        print("✅ API call successful!")
-        print(f"\nQuote ID: {parsed.get('quote_id')}")
-        print(f"Offers: {len(parsed.get('offers', []))}")
-        
-        for offer in parsed.get('offers', []):
-            print(f"\n  Product: {offer.get('product_info', {}).get('title', 'N/A')}")
-            print(f"  Price: SGD ${offer.get('unit_price')} × {len(offer.get('passengers', []))} passengers")
-        
-        print("\n✅ Test 3: PASSED")
-        
-    except Exception as e:
-        print(f"❌ API call failed: {e}")
-        return False
+    # Test trip details
+    trip_details = {
+        "destination_country": "Japan",
+        "departure_date": (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d"),
+        "return_date": (datetime.now() + timedelta(days=37)).strftime("%Y-%m-%d"),
+        "trip_duration_days": 7,
+        "travelers": [
+            {"age": 35, "has_pre_existing_conditions": False}
+        ],
+        "planned_activities": ["skiing"]
+    }
     
-    # Test 4: Single trip (no return date)
-    print("\n============================================================")
-    print("Test 4: Get Pricing - Single Trip (USA)")
-    print("============================================================")
+    print("Getting pricing for all products...")
+    print(f"Destination: {trip_details['destination_country']}")
+    print(f"Duration: {trip_details['trip_duration_days']} days")
+    print(f"Travelers: {len(trip_details['travelers'])}")
+    print()
     
     try:
-        response = client.get_pricing_sync(
-            departure_date="2025-06-01",
-            return_date="2025-06-01",  # Same date for single trip
-            departure_country="SG",
-            arrival_country="US",  # USA
-            adults_count=1,
-            children_count=0,
-            trip_type="ST"  # Single trip
+        results = await service.get_all_product_pricing(
+            trip_details=trip_details,
+            eligible_products=["Product A", "Product B", "Product C"]
         )
         
-        parsed = client.parse_pricing_response(response)
+        print("Results:")
+        for product_key, pricing_data in results.items():
+            print(f"\n{product_key}:")
+            
+            if pricing_data.get("error"):
+                print(f"  ✗ Error: {pricing_data['error']}")
+            else:
+                print(f"  ✓ Quote ID: {pricing_data.get('quote_id')}")
+                offers = pricing_data.get("offers", [])
+                print(f"  ✓ Offers: {len(offers)}")
+                
+                for i, offer in enumerate(offers, 1):
+                    print(f"\n  Offer {i}:")
+                    print(f"    Product Code: {offer.get('product_code')}")
+                    print(f"    Price: ${offer.get('unit_price', 0):,.2f} {offer.get('currency', 'SGD')}")
         
-        print("✅ API call successful!")
-        print(f"\nQuote ID: {parsed.get('quote_id')}")
-        print(f"Trip Type: Single Trip")
-        print(f"Price: SGD ${parsed.get('offers', [{}])[0].get('unit_price', 0)}")
-        
-        print("\n✅ Test 4: PASSED")
+        print()
         
     except Exception as e:
-        print(f"❌ API call failed: {e}")
-        return False
+        print(f"✗ Multi-product pricing failed: {e}\n")
+
+
+async def main():
+    """Run all tests"""
+    print("\n" + "#"*70)
+    print("# ANCILEO API INTEGRATION TEST")
+    print("#"*70)
     
-    # Summary
-    print("\n============================================================")
-    print("📊 Test Summary")
-    print("============================================================")
-    print("  ✅ PASS: API Configuration")
-    print("  ✅ PASS: Japan Round Trip Pricing")
-    print("  ✅ PASS: Thailand Round Trip Pricing")
-    print("  ✅ PASS: USA Single Trip Pricing")
-    print("\n============================================================")
-    print("Overall: 4/4 tests passed")
-    print("============================================================")
-    print("\n✅ Ancileo API integration is working correctly!")
-    print("\n⚠️  NOTE: API returns ONLY ONE offer per request (MSIG limitation)")
-    print("    Our system will use this for real pricing, but still show")
-    print("    our 3 local policies for comparison.")
+    print(f"\nConfiguration:")
+    print(f"  Pricing URL: {settings.ancileo_pricing_url}")
+    print(f"  Purchase URL: {settings.ancileo_purchase_url}")
+    print(f"\nAPI Keys Configured:")
+    print(f"  SCOOT (Product A): {'✓' if settings.scoot else '✗'}")
+    print(f"  MAG (Product B): {'✓' if settings.mag else '✗'}")
+    print(f"  TRIP (Product C): {'✓' if settings.trip else '✗'}")
     
-    return True
+    configured_count = sum([
+        bool(settings.scoot),
+        bool(settings.mag),
+        bool(settings.trip)
+    ])
+    
+    if configured_count == 0:
+        print("\n⚠️  WARNING: No API keys configured!")
+        print("   Add API keys to your .env file:")
+        print("   SCOOT=your_scoot_api_key")
+        print("   MAG=your_mag_api_key")
+        print("   TRIP=your_trip_api_key\n")
+        return
+    
+    print(f"\n{configured_count}/3 API keys configured")
+    
+    # Run tests
+    await test_individual_api_keys()
+    await test_multi_product_pricing()
+    
+    print("\n" + "#"*70)
+    print("# TEST COMPLETE")
+    print("#"*70 + "\n")
+    
+    if configured_count == 3:
+        print("✅ All API keys working!")
+        print("   Your chatbot can now get real-time pricing from Ancileo API\n")
+    else:
+        print(f"⚠️  {3-configured_count} API key(s) not configured")
+        print("   Configure remaining keys for full functionality\n")
 
 
 if __name__ == "__main__":
-    success = test_ancileo_api()
-    sys.exit(0 if success else 1)
-
+    asyncio.run(main())

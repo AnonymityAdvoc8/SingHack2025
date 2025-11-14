@@ -136,9 +136,35 @@ def convert_from_ask_format(
     if ask_response.get("agent_activities"):
         metadata["agent_activities"] = ask_response["agent_activities"]
     
+    # NEW: Include taxonomy data for frontend
+    if ask_response.get("eligible_products"):
+        metadata["eligible_products"] = ask_response["eligible_products"]
+    if ask_response.get("taxonomy_comparison"):
+        metadata["taxonomy_comparison"] = ask_response["taxonomy_comparison"]
+    if ask_response.get("quotes"):
+        metadata["quotes"] = ask_response["quotes"]
+    if ask_response.get("trip_details"):
+        metadata["trip_details"] = ask_response["trip_details"]
+    if ask_response.get("real_time_intelligence"):
+        metadata["real_time_intelligence"] = ask_response["real_time_intelligence"]
+    if ask_response.get("policy_recommendations"):
+        metadata["policy_recommendations"] = ask_response["policy_recommendations"]
+    
     # Append metadata to answer if present (UI will parse it)
     if metadata:
-        answer = f"{answer}\n\n[METADATA]{json.dumps(metadata)}[/METADATA]"
+        # Convert datetime objects to strings before JSON serialization
+        def json_serializable(obj):
+            from datetime import datetime, date
+            if isinstance(obj, (datetime, date)):
+                return obj.isoformat()
+            elif isinstance(obj, dict):
+                return {k: json_serializable(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [json_serializable(item) for item in obj]
+            return obj
+        
+        serializable_metadata = json_serializable(metadata)
+        answer = f"{answer}\n\n[METADATA]{json.dumps(serializable_metadata)}[/METADATA]"
     
     # Estimate token counts (rough approximation)
     prompt_tokens = sum(len(msg.get("content", "").split()) for msg in ask_response.get("context", {}).get("conversation_history", []))

@@ -9,6 +9,8 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
+import time
+import random
 
 from app.config import get_settings
 from app.database import get_db, init_db
@@ -90,6 +92,64 @@ async def shutdown_event():
     logger.info("api_shutdown")
 
 
+# Gmail OAuth endpoints
+@app.get("/gmail/authorize")
+async def gmail_authorize(session_id: Optional[str] = None):
+    """
+    Initialize Gmail OAuth flow
+    Returns authorization URL for user to grant Gmail access
+    """
+    from app.services.gmail_oauth import get_gmail_oauth_service
+    
+    # Use provided session_id or generate new one
+    state = session_id or f"session_{int(time.time())}_{random.randint(1000, 9999)}"
+    
+    logger.info("gmail_authorize_request", session=state)
+    
+    oauth_service = get_gmail_oauth_service()
+    auth_url = oauth_service.get_authorization_url(state)
+    
+    if not auth_url:
+        raise HTTPException(status_code=500, detail="Failed to generate authorization URL")
+    
+    return {
+        "authorization_url": auth_url,
+        "session_id": state
+    }
+
+
+@app.get("/gmail/status")
+async def gmail_status(session_id: str):
+    """
+    Check Gmail authorization status and return any scanned bookings
+    """
+    logger.info("gmail_status_check", session=session_id)
+    
+    try:
+        from app.services.session_store import get_session_store
+        session_store = get_session_store()
+        
+        session_data = session_store.load_session(session_id)
+        
+        if not session_data:
+            return {
+                "authorized": False,
+                "bookings": []
+            }
+        
+        return {
+            "authorized": session_data.get("gmail_authorized", False),
+            "bookings": session_data.get("gmail_scan_results", [])
+        }
+    
+    except Exception as e:
+        logger.error("gmail_status_error", error=str(e))
+        return {
+            "authorized": False,
+            "bookings": []
+        }
+
+
 # Health check endpoint
 @app.get("/oauth/callback")
 async def oauth_callback(code: str, state: str):
@@ -159,26 +219,11 @@ async def oauth_callback(code: str, state: str):
                 gmail_scan_results=session_data["gmail_scan_results"]  # CRITICAL: Save scan results
             )
             
-            # Show results immediately
-            formatted_bookings = gmail_agent.format_bookings_for_display(bookings)
+            # Show beautiful success page with auto-close
+            logger.info("gmail_oauth_complete_showing_success_page", bookings_found=len(bookings))
             
-            html_response = f"""
-            <html>
-            <head><title>Gmail Authorized</title></head>
-            <body style="font-family: system-ui; padding: 40px; background: #1a1a1a; color: white;">
-                <h2>✅ Gmail Authorized!</h2>
-                <p>I found {len(bookings)} booking(s) in your email.</p>
-                <div style="background: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                    <pre style="white-space: pre-wrap;">{formatted_bookings}</pre>
-                </div>
-                <p><strong>Close this window and return to the chat - your bookings are ready!</strong></p>
-                <script>
-                    // Auto-close after 3 seconds
-                    setTimeout(() => window.close(), 3000);
-                </script>
-            </body>
-            </html>
-            """
+            # Use the new success page HTML with auto-close functionality
+            html_response = oauth_service.get_success_page_html()
             
             from fastapi.responses import HTMLResponse
             return HTMLResponse(content=html_response)
@@ -291,30 +336,44 @@ async def ask_question(
     """
     logger.info("api_ask", question_length=len(request.question))
     
-    # Import here to avoid circular dependency
-    from app.services.orchestration_service import ConversationOrchestrator
-    
-    # Use orchestrator for intelligent routing
-    orchestrator = ConversationOrchestrator(db)
-    result = await orchestrator.handle_message(
-        message=request.question,
-        session_id=request.session_id,
-        context=request.context
-    )
-    
-    # Add metadata for API response
-    result["api_version"] = "2.0"
-    result["features_used"] = []
-    
-    # Track which features were used
-    if result.get("real_time_intelligence"):
-        result["features_used"].append("tavily_intelligence")
-    if result.get("trip_details"):
-        result["features_used"].append("conversational_extraction")
-    if result.get("policy_recommendations"):
-        result["features_used"].append("policy_matching")
-    
-    return result
+    try:
+        # Import here to avoid circular dependency
+        from app.services.orchestration_service import ConversationOrchestrator
+        
+        # Use orchestrator for intelligent routing
+        orchestrator = ConversationOrchestrator(db)
+        result = await orchestrator.handle_message(
+            message=request.question,
+            session_id=request.session_id,
+            context=request.context
+        )
+        
+        # Ensure success field is always present
+        result["success"] = True
+        
+        # Add metadata for API response
+        result["api_version"] = "2.0"
+        result["features_used"] = []
+        
+        # Track which features were used
+        if result.get("real_time_intelligence"):
+            result["features_used"].append("tavily_intelligence")
+        if result.get("trip_details"):
+            result["features_used"].append("conversational_extraction")
+        if result.get("policy_recommendations"):
+            result["features_used"].append("policy_matching")
+        
+        logger.info("api_ask_success", session_id=request.session_id)
+        
+        return result
+        
+    except Exception as e:
+        logger.error("api_ask_error", error=str(e), session_id=request.session_id)
+        return {
+            "success": False,
+            "error": str(e),
+            "answer": "I apologize, but I encountered an error processing your request. Please try again."
+        }
 
 
 @app.post("/eligibility")
@@ -382,6 +441,194 @@ async def get_quote(
     )
     
     return result
+
+
+# Payment endpoints
+class PurchaseRequest(BaseModel):
+    quote_id: str
+    policy_id: str
+    policy_name: str
+    premium: float
+    user_id: Optional[str] = None
+    trip_details: Optional[Dict[str, Any]] = None
+
+
+@app.post("/purchase")
+async def purchase_policy(
+    request: PurchaseRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Initiate policy purchase with Stripe Checkout
+    
+    Creates payment record and returns Stripe checkout URL
+    """
+    logger.info("api_purchase", policy=request.policy_id, premium=request.premium)
+    
+    mcp_server = MCPServer(db)
+    result = mcp_server.tools.purchase_policy(
+        quote_id=request.quote_id,
+        selected_policy_id=request.policy_id,
+        user_id=request.user_id or "guest",
+        premium=request.premium,
+        policy_name=request.policy_name,
+        trip_details=request.trip_details
+    )
+    
+    return result
+
+
+@app.get("/payment/status/{payment_intent_id}")
+async def check_payment_status(
+    payment_intent_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Check payment status
+    
+    Returns current status from DynamoDB
+    """
+    logger.info("api_check_payment_status", payment_id=payment_intent_id)
+    
+    mcp_server = MCPServer(db)
+    result = mcp_server.tools.check_payment_status(payment_intent_id)
+    
+    return result
+
+
+@app.post("/payment/complete/{payment_intent_id}")
+async def complete_payment(
+    payment_intent_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Complete policy issuance after payment succeeds
+    
+    Calls Ancileo Purchase API to issue real policy
+    """
+    logger.info("api_complete_payment", payment_id=payment_intent_id)
+    
+    from app.services.stripe_payment_service import get_stripe_payment_service
+    payment_service = get_stripe_payment_service()
+    
+    result = await payment_service.complete_policy_issuance(payment_intent_id)
+    
+    return result
+
+
+@app.get("/payment/success-callback")
+async def payment_success_callback(payment_id: str):
+    """
+    Success callback page shown after Stripe payment
+    Auto-closes window - main app polls for completion
+    """
+    from fastapi.responses import HTMLResponse
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Payment Successful</title>
+        <style>
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                display: flex;
+                align-items: center;
+                justify-center;
+                min-height: 100vh;
+                margin: 0;
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+            }}
+            .container {{
+                text-align: center;
+            }}
+            .success-icon {{
+                font-size: 6rem;
+                margin-bottom: 1rem;
+                animation: bounce 0.5s;
+            }}
+            @keyframes bounce {{
+                0%, 100% {{ transform: translateY(0); }}
+                50% {{ transform: translateY(-20px); }}
+            }}
+            h1 {{
+                font-size: 2rem;
+                margin-bottom: 0.5rem;
+            }}
+            p {{
+                font-size: 1.1rem;
+                opacity: 0.9;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="success-icon">✅</div>
+            <h1>Payment Successful!</h1>
+            <p>This window will close automatically...</p>
+        </div>
+        <script>
+            // Auto-close window after 2 seconds
+            setTimeout(() => {{
+                window.close();
+            }}, 2000);
+        </script>
+    </body>
+    </html>
+    """
+    
+    return HTMLResponse(content=html)
+
+
+@app.get("/payment/cancel-callback")
+async def payment_cancel_callback():
+    """
+    Cancel callback page shown when user cancels payment
+    Auto-closes window
+    """
+    from fastapi.responses import HTMLResponse
+    
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Payment Cancelled</title>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                display: flex;
+                align-items: center;
+                justify-center;
+                min-height: 100vh;
+                margin: 0;
+                background: #f7fafc;
+            }
+            .container {
+                text-align: center;
+                color: #4a5568;
+            }
+            h1 {
+                font-size: 1.5rem;
+                margin-bottom: 0.5rem;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Payment Cancelled</h1>
+            <p>This window will close automatically...</p>
+        </div>
+        <script>
+            setTimeout(() => {
+                window.close();
+            }, 1500);
+        </script>
+    </body>
+    </html>
+    """
+    
+    return HTMLResponse(content=html)
 
 
 # List all policies endpoint

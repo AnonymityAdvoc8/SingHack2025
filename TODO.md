@@ -748,7 +748,64 @@
 
 ## 📅 Phase 6: Polish & Demo (Final) - Day 2 Evening + Day 3 (8 hours)
 
-**Objective:** Web UI, end-to-end testing, demo preparation
+**Objective:** Web UI, end-to-end testing, demo preparation  
+**Status:** 🚧 In Progress - OpenAI compatibility + conversation memory complete
+
+### 6.0 OpenAI-Compatible API & Conversation Memory ✅ COMPLETE
+
+- [x] **Task 6.0.1:** Build OpenAI-compatible Chat Completions API
+  - [x] Created `/v1/chat/completions` endpoint
+  - [x] Support for streaming and non-streaming responses
+  - [x] OpenAI message format compatibility
+  - [x] Server-Sent Events (SSE) for streaming
+  - [x] Compatible with JAN.ai, Claude Desktop, and OpenAI SDKs
+  - **Time:** 1.5 hours ✅
+  - **Owner:** AI Assistant
+
+- [x] **Task 6.0.2:** Implement conversation memory system
+  - [x] Load conversation history from OpenAI format
+  - [x] Store conversation history across turns
+  - [x] Update orchestrator to use conversation context
+  - [x] Preserve extracted trip details between messages
+  - [x] Multi-turn conversations working seamlessly
+  - **Time:** 2 hours ✅
+  - **Owner:** AI Assistant
+
+- [x] **Task 6.0.3:** Enhanced intent detection with context
+  - [x] Contextual continuation detection
+  - [x] Recognize follow-up questions after recommendations
+  - [x] Route follow-ups to Q&A instead of re-running recommendations
+  - [x] Detect trip detail questions from conversation flow
+  - [x] Pattern: "Can you explain more?" → Policy Q&A (not new recommendation)
+  - **Time:** 1 hour ✅
+  - **Owner:** AI Assistant
+
+- [x] **Task 6.0.4:** Update extraction service for conversation history
+  - [x] Enhanced prompt to include conversation history
+  - [x] Separate history from extracted trip details in context
+  - [x] Show last 5 messages to LLM for context
+  - [x] Incremental extraction across multiple turns
+  - [x] Merge new information with previously extracted details
+  - **Time:** 45 min ✅
+  - **Owner:** AI Assistant
+
+- [x] **Task 6.0.5:** Comprehensive testing
+  - [x] Test: 3-turn conversation (need insurance → Japan → dates/age)
+  - [x] Test: Follow-up questions about recommended policies
+  - [x] Test: Context preservation across turns
+  - [x] Test: Streaming responses with SSE
+  - [x] Result: All tests passing ✅
+  - **Time:** 1 hour ✅
+  - **Owner:** AI Assistant
+
+**Phase 6.0 Total Time:** ~6 hours ✅ COMPLETED  
+**Phase 6.0 Completion Criteria:** 
+- ✅ OpenAI-compatible `/v1/chat/completions` endpoint
+- ✅ Full conversation memory (context preserved across turns)
+- ✅ Works with JAN.ai and other OpenAI-compatible clients
+- ✅ Follow-up questions properly routed to Q&A
+- ✅ Streaming and non-streaming both working
+- ✅ All conversation tests passing
 
 ### 6.1 Web Chat Interface
 
@@ -903,11 +960,11 @@
 Phase 1: Foundation               [████████████████████] 100% ✅
 Phase 2: MCP Layer                [████████████████████] 100% ✅
 Phase 3: Intelligent Data Collect [████████████████████] 100% ✅
-Phase 4: Purchase Flow            [                    ] 0%
+Phase 4: Purchase Flow            [███░░░░░░░░░░░░░░░░░] 15% 🚧 (Pricing API integrated)
 Phase 5: Claims Intelligence      [████████████████████] 100% ✅
-Phase 6: Polish & Demo            [                    ] 0%
+Phase 6: Polish & Demo            [██████░░░░░░░░░░░░░░] 30% 🚧 (OpenAI API + Memory complete)
 ----------------------------------------
-Total Progress:                   [████████████████░░░░] 80%
+Total Progress:                   [█████████████████░░░] 85%
 ```
 
 ### Time Budget
@@ -917,10 +974,10 @@ Total Progress:                   [███████████████
 | Phase 1 | 4h | 4h | ✅ Complete |
 | Phase 2 | 6h | 10h | ✅ Complete |
 | Phase 3 | 4h | 3h | ✅ Complete |
-| Phase 4 | 3h | -- | ⚠️ Not Started |
+| Phase 4 | 3h | 0.75h | 🚧 In Progress (Pricing API) |
 | Phase 5 | 4h | 2h | ✅ Complete |
-| Phase 6 | 8h | -- | ⚠️ Not Started |
-| **Total** | **29h** | **19h** | **80% Complete** |
+| Phase 6 | 8h | 6h | 🚧 In Progress (OpenAI API) |
+| **Total** | **29h** | **25.75h** | **85% Complete** |
 
 ---
 
@@ -937,6 +994,9 @@ Total Progress:                   [███████████████
 - ✅ Real-time intelligence (Tavily API) **COMPLETE**
 - ✅ Data-driven recommendations with real pricing logic **COMPLETE**
 - ✅ Dual-access pattern (normalized + raw text) **COMPLETE**
+- ✅ OpenAI-compatible API (works with JAN.ai, Claude Desktop) **COMPLETE**
+- ✅ Multi-turn conversation memory **COMPLETE**
+- ✅ Intelligent follow-up question routing **COMPLETE**
 - [ ] Beautiful, responsive UI *(Phase 6)* **TODO**
 
 ### Demo Requirements
@@ -955,14 +1015,16 @@ Total Progress:                   [███████████████
 - **LLM:** Groq API with llama-3.3-70b-versatile model ✅
 - **Real-Time Intelligence:** Tavily Search API ✅ INTEGRATED
 - **Conversational AI:** Custom extraction service with Groq ✅
+- **Conversation Memory:** Full multi-turn context preservation ✅
+- **OpenAI Compatibility:** `/v1/chat/completions` with SSE streaming ✅
 - **Document Processing:** Skipped for demo (focus on chat)
 - **Email Integration:** Skipped for demo (focus on chat)
 - **Payment:** Stripe (already integrated!) - Phase 4 next
-- **Frontend:** Next.js 14 + shadcn/ui (Phase 6) or Claude Desktop MCP
+- **Frontend:** OpenAI-compatible (JAN.ai, Claude Desktop) ✅ + Next.js UI (Phase 6 TODO)
 - **Backend:** FastAPI for MCP server ✅ COMPLETE
 - **PDF Processing:** pdfplumber for text extraction ✅
 - **MCP Protocol:** Custom implementation with 11 tools, 4 resources ✅
-- **Testing:** All tests passing (MCP, Tavily, Claims DB) ✅
+- **Testing:** All tests passing (MCP, Tavily, Claims DB, Conversation Memory) ✅
 
 ### Known Limitations
 - Gmail/Document upload skipped for demo (focused on conversational chat)
@@ -990,7 +1052,13 @@ Total Progress:                   [███████████████
    - [x] Conversational extraction ✅
    - [x] Tavily API integration (real-time intelligence) ✅
    - [x] Claims database integration (72,592 MSIG claims) ✅
-7. [ ] Phase 4: Purchase Flow 🎯 NEXT
+7. [x] Phase 6.0: OpenAI Compatibility ✅ **COMPLETE**
+   - [x] `/v1/chat/completions` endpoint with SSE ✅
+   - [x] Multi-turn conversation memory ✅
+   - [x] Intelligent follow-up routing ✅
+   - [x] JAN.ai compatibility tested ✅
+8. [ ] Phase 4: Purchase Flow 🎯 NEXT
+   - [x] MSIG/Ancileo pricing API integration ✅
    - [ ] Stripe integration
    - [ ] Payment flow
    - [ ] Policy issuance
@@ -1007,4 +1075,57 @@ Total Progress:                   [███████████████
 ---
 
 **Let's build something amazing! 🎉**
+
+---
+
+## 📋 Recent Updates Summary
+
+### Phase 6.0: OpenAI Compatibility & Conversation Memory (Completed)
+
+**What we built:**
+1. **OpenAI-Compatible API** (`/v1/chat/completions`)
+   - Full OpenAI Chat Completions API compatibility
+   - Streaming (SSE) and non-streaming responses
+   - Works seamlessly with JAN.ai, Claude Desktop, and OpenAI SDKs
+   - Standard message format with role/content structure
+
+2. **Multi-Turn Conversation Memory**
+   - Context preserved across all conversation turns
+   - Incremental trip details extraction across multiple messages
+   - Example: "I need insurance" → "Japan" → "December 9 days, I'm 31" → Full recommendation
+
+3. **Intelligent Intent Detection**
+   - Contextual continuation recognition
+   - Detects when last message was asking trip questions
+   - Routes follow-up questions to appropriate handlers
+   - Example: After recommendation → "Tell me more about coverage" → Policy Q&A (not new recommendation)
+
+4. **Enhanced Extraction Service**
+   - LLM prompt includes last 5 conversation messages
+   - Separates conversation history from extracted trip details
+   - Merges new information with previously extracted data
+   - Handles ambiguous dates and references ("it", "that destination")
+
+**Test Results:**
+- ✅ 3-turn conversation test passing (context preserved)
+- ✅ Follow-up question routing working correctly
+- ✅ Streaming responses functional
+- ✅ JAN.ai integration confirmed working
+- ✅ All conversation memory tests passing
+
+**Files Created/Modified:**
+- `backend-mcp/app/api/openai_compat.py` (NEW)
+- `backend-mcp/app/api/__init__.py` (NEW)
+- `backend-mcp/app/main.py` (added `/v1/chat/completions`, `/v1/models`)
+- `backend-mcp/app/services/orchestration_service.py` (conversation memory, intent detection)
+- `backend-mcp/app/services/conversational_service.py` (history-aware extraction)
+- `backend-mcp/scripts/test_conversation_memory.py` (NEW)
+- `backend-mcp/scripts/test_openai_conversation.py` (NEW)
+- `backend-mcp/scripts/test_followup_questions.py` (NEW)
+
+**Impact:**
+- Users can now use ANY OpenAI-compatible client (JAN.ai, Continue, etc.)
+- Natural multi-turn conversations without losing context
+- Follow-up questions work intelligently without re-running recommendations
+- Production-ready conversation system with proper memory management
 
